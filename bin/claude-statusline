@@ -14,7 +14,7 @@ short_dir="${dir/#$HOME/\~}"
 
 branch=""
 if [[ -n $dir ]] && b=$(git -C "$dir" branch --show-current 2>/dev/null) && [[ -n $b ]]; then
-  branch=" \e[35m${b}\e[0m"
+  branch="$b"
 fi
 
 # Trending repo, advancing once a minute. Time-based rather than a counter so
@@ -29,6 +29,17 @@ if [[ -r $LINES ]]; then
   fi
 fi
 
-printf "\e[36m%s\e[0m \e[2m%s\e[0m%b" "$model" "$short_dir" "$branch"
-[[ -n $repo ]] && printf "  \e[2m·\e[0m  \e[33m%s\e[0m" "$repo"
-printf "\n"
+# Build with ANSI-C quoted variables and print with %s only: nesting escape
+# sequences inside a printf *format* string mangles them.
+E=$'\033'
+CYAN="${E}[36m"; DIM="${E}[2m"; YEL="${E}[33m"; MAG="${E}[35m"; OFF="${E}[0m"
+
+out="${CYAN}${model}${OFF} ${DIM}${short_dir}${OFF}"
+[[ -n $branch ]] && out+=" ${MAG}${branch}${OFF}"
+if [[ -n $repo ]]; then
+  # OSC 8 hyperlink — the repo name is the clickable text.
+  link_open="${E}]8;;https://github.com/${repo}${E}\\"
+  link_close="${E}]8;;${E}\\"
+  out+="  ${DIM}·${OFF}  ${link_open}${YEL}${repo}${OFF}${link_close}"
+fi
+printf '%s\n' "$out"
