@@ -19,8 +19,9 @@ fi
 E=$'\033'
 CYAN="${E}[36m"; DIM="${E}[2m"; YEL="${E}[33m"; MAG="${E}[35m"; OFF="${E}[0m"
 
-out="${CYAN}${model}${OFF} ${DIM}${short_dir}${OFF}"
-[[ -n $branch ]] && out+=" ${MAG}${branch}${OFF}"
+row1="${CYAN}${model}${OFF} ${DIM}${short_dir}${OFF}"
+[[ -n $branch ]] && row1+=" ${MAG}${branch}${OFF}"
+row2=""
 
 # ── Trending repos ────────────────────────────────────────────────────────
 # GROUP repos advance once every ROTATE seconds, keyed off the wall clock so
@@ -35,18 +36,17 @@ if [[ -r $NAMES ]]; then
     groups=$(( (total + GROUP - 1) / GROUP ))
     g=$(( ($(date +%s) / ROTATE) % groups ))
     start=$(( g * GROUP + 1 ))
-    # Plain gap before the first repo so the branch doesn't read as part of
-    # the list; " / " between repos thereafter.
-    sep="  "
+    sep=""
     while IFS= read -r name; do
       [[ -z $name ]] && continue
       # OSC 8 hyperlink; the URL is always github.com/<owner>/<repo>
       link_open="${E}]8;;https://github.com/${name}${E}\\"
       link_close="${E}]8;;${E}\\"
-      out+="${sep}${link_open}${YEL}${name}${OFF}${link_close}"
+      row2+="${sep}${link_open}${YEL}${name}${OFF}${link_close}"
       sep="${DIM} / ${OFF}"
     done < <(sed -n "${start},$((start + GROUP - 1))p" "$NAMES")
   fi
 fi
 
-printf '%s\n' "$out"
+printf '%s\n' "$row1"
+[[ -n $row2 ]] && printf '%s\n' "$row2"
