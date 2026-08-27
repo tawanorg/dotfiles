@@ -1,0 +1,13 @@
+.DS_Store
+.AppleDouble
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+.env.local
+.direnv/
+node_modules/
+__pycache__/
+.venv/
+.python-version

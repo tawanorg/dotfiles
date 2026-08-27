@@ -1,0 +1,81 @@
+# Starship prompt — plain text, no Nerd Font glyphs, renders in any font.
+format = """
+$directory\
+$git_branch$git_status\
+$nodejs$python$golang$rust\
+$docker_context$aws\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true
+command_timeout = 1000
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+style = "bold cyan"
+read_only = " [ro]"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+[git_branch]
+symbol = ""
+format = "on [$branch]($style) "
+style = "bold purple"
+
+[git_status]
+style = "bold red"
+format = '([\[$all_status$ahead_behind\]]($style) )'
+ahead = "^${count}"
+behind = "v${count}"
+diverged = "^${ahead_count}v${behind_count}"
+untracked = "?${count}"
+stashed = "$${count}"
+modified = "!${count}"
+staged = "+${count}"
+renamed = "»${count}"
+deleted = "x${count}"
+conflicted = "="
+
+[cmd_duration]
+min_time = 2000
+format = "took [$duration](bold yellow) "
+
+# Language versions appear only inside a project that uses them
+[nodejs]
+symbol = "node "
+format = "via [$symbol($version )]($style)"
+style = "bold green"
+
+[python]
+symbol = "py "
+format = 'via [$symbol${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
+style = "bold yellow"
+
+[golang]
+symbol = "go "
+format = "via [$symbol($version )]($style)"
+style = "bold cyan"
+
+[rust]
+symbol = "rs "
+format = "via [$symbol($version )]($style)"
+
+[docker_context]
+symbol = "docker "
+format = "via [$symbol$context]($style) "
+only_with_files = true
+
+[aws]
+symbol = "aws "
+format = 'on [$symbol($profile )(\($region\) )]($style)'
+style = "bold yellow"
+
+[kubernetes]
+disabled = true
+
+[gcloud]
+disabled = true
