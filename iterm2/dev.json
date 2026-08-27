@@ -252,29 +252,14 @@
       "Status Bar Layout": {
         "components": [
           {
-            "class": "iTermStatusBarAttributedTextComponent",
+            "class": "iTermStatusBarSwiftyStringComponent",
             "configuration": {
               "knobs": {
-                "text": "\\(user.trending)",
-                "base: compression resistance": 1,
-                "base: priority": 5
-              }
-            }
-          },
-          {
-            "class": "iTermStatusBarSpringComponent",
-            "configuration": {
-              "knobs": {
-                "base: priority": 1
+                "expression": "\\(user.trending)"
               }
             }
           }
-        ],
-        "advanced configuration": {
-          "font": "MesloLGSNFM-Regular 12",
-          "algorithm": 1,
-          "remove empty components": true
-        }
+        ]
       }
     }
   ]
