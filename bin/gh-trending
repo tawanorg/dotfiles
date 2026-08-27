@@ -37,6 +37,14 @@ def _token():
         pass
     return os.environ.get("GITHUB_TOKEN") or None
 
+def _clean(text):
+    """Collapse any whitespace run to a single space.
+
+    A status bar is one line: a newline or tab in a repo description would
+    break the SetUserVar payload, and GitHub does allow both.
+    """
+    return " ".join((text or "").split())
+
 def _search(q, token):
     url = f"{API}?{urllib.parse.urlencode({'q': q, 'sort': 'stars', 'order': 'desc', 'per_page': 25})}"
     req = urllib.request.Request(url, headers={
@@ -66,7 +74,7 @@ def refresh():
             repos.append({
                 "name": name,
                 "stars": it["stargazers_count"],
-                "desc": (it.get("description") or "").strip(),
+                "desc": _clean(it.get("description")),
                 "url": it["html_url"],
                 "topic": label,
             })

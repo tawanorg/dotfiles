@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Claude Code status line. Receives session JSON on stdin, prints one line.
+# Kept in bash+jq rather than python: this runs on every refresh, so process
+# startup cost matters.
+input=$(cat)
+
+# Tab-separated, and split on tab only — model names contain spaces ("Opus 5").
+IFS=$'\t' read -r model dir <<<"$(jq -r '[(.model.display_name // "claude"),
+                                          (.workspace.current_dir // .cwd // "")]
+                                         | @tsv' <<<"$input")"
+
+# ~ instead of the full home path
+short_dir="${dir/#$HOME/\~}"
+
+branch=""
+if [[ -n $dir ]] && b=$(git -C "$dir" branch --show-current 2>/dev/null) && [[ -n $b ]]; then
+  branch=" \e[35m${b}\e[0m"
+fi
+
+# Trending repo, advancing once a minute. Time-based rather than a counter so
+# it rotates on its own without the status line having to keep state.
+repo=""
+LINES="$HOME/.cache/gh-trending.lines"
+if [[ -r $LINES ]]; then
+  n=$(grep -c . "$LINES" 2>/dev/null || echo 0)
+  if (( n > 0 )); then
+    idx=$(( ($(date +%s) / 60) % n + 1 ))
+    repo=$(sed -n "${idx}p" "$LINES" | base64 --decode 2>/dev/null)
+  fi
+fi
+
+printf "\e[36m%s\e[0m \e[2m%s\e[0m%b" "$model" "$short_dir" "$branch"
+[[ -n $repo ]] && printf "  \e[2m·\e[0m  \e[33m%s\e[0m" "$repo"
+printf "\n"
