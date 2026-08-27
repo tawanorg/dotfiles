@@ -1,14 +1,28 @@
 #!/usr/bin/env bash
-# Claude Code status line. Reads session JSON on stdin, prints one line.
-# Runs on every refresh, so it stays in bash+jq and does no decoding: the
-# cache files are pre-rendered by gh-trending.
+# Claude Code status line.
+#
+# Row 1: session health — model, effort, dir/branch, context left, cost, limits
+# Row 2: trending open-source repos (clickable)
+#
+# Runs on every refresh, so it stays in bash+jq: one jq call, no decoding.
+# Field names come from the real payload Claude Code sends on stdin.
 input=$(cat)
 
-# Tab-separated, split on tab only — model names contain spaces ("Opus 5").
-IFS=$'\t' read -r model dir <<<"$(jq -r '[(.model.display_name // "claude"),
-                                          (.workspace.current_dir // .cwd // "")]
-                                         | @tsv' <<<"$input")"
+IFS=$'\t' read -r model dir ctx cost rl5 rl7 effort added removed <<<"$(jq -r '
+  [ (.model.display_name // "claude"),
+    (.workspace.current_dir // .cwd // "-"),
+    (.context_window.remaining_percentage // -1),
+    (.cost.total_cost_usd // -1),
+    (.rate_limits.five_hour.used_percentage // -1),
+    (.rate_limits.seven_day.used_percentage // -1),
+    (.effort.level // "-"),
+    (.cost.total_lines_added // 0),
+    (.cost.total_lines_removed // 0)
+  ] | @tsv' <<<"$input")"
 
+[[ $dir    == "-" ]] && dir=""
+[[ $effort == "-" ]] && effort=""
+model="${model/ (1M context)/ 1M}"          # keep the 1M hint without the width
 short_dir="${dir/#$HOME/\~}"
 
 branch=""
@@ -17,33 +31,60 @@ if [[ -n $dir ]] && b=$(git -C "$dir" branch --show-current 2>/dev/null) && [[ -
 fi
 
 E=$'\033'
-CYAN="${E}[36m"; DIM="${E}[2m"; YEL="${E}[33m"; MAG="${E}[35m"; OFF="${E}[0m"
+CYAN="${E}[36m"; DIM="${E}[2m"; YEL="${E}[33m"; MAG="${E}[35m"
+GRN="${E}[32m"; RED="${E}[31m"; OFF="${E}[0m"
 
-row1="${CYAN}${model}${OFF} ${DIM}${short_dir}${OFF}"
-[[ -n $branch ]] && row1+=" ${MAG}${branch}${OFF}"
-row2=""
+# Colour by headroom: green while comfortable, yellow when worth noticing,
+# red when it needs action (compact the context / limits about to bite).
+ctx_colour() { local v=$1; (( v < 0 )) && return; if   (( v <= 15 )); then printf '%s' "$RED"
+              elif (( v <= 35 )); then printf '%s' "$YEL"; else printf '%s' "$GRN"; fi; }
+lim_colour() { local v=$1; if   (( v >= 90 )); then printf '%s' "$RED"
+              elif (( v >= 70 )); then printf '%s' "$YEL"; else printf '%s' "$DIM"; fi; }
 
-# ── Trending repos ────────────────────────────────────────────────────────
-# GROUP repos advance once every ROTATE seconds, keyed off the wall clock so
-# the line is stable between refreshes and needs no stored state.
+sep="${DIM}  ·  ${OFF}"
+row1="${CYAN}${model}${OFF}"
+[[ -n $effort ]] && row1+=" ${DIM}${effort}${OFF}"
+if [[ -n $short_dir ]]; then
+  row1+="${sep}${DIM}${short_dir}${OFF}"
+  [[ -n $branch ]] && row1+=" ${MAG}${branch}${OFF}"
+fi
+
+# Context remaining — the number that decides when to /compact.
+if (( ctx >= 0 )); then
+  row1+="${sep}$(ctx_colour "$ctx")ctx ${ctx}%${OFF}"
+fi
+
+if [[ $cost != "-1" ]]; then
+  row1+="${sep}${DIM}\$$(printf '%.2f' "$cost")${OFF}"
+fi
+
+if (( added > 0 || removed > 0 )); then
+  row1+="${sep}${GRN}+${added}${OFF}${DIM}/${OFF}${RED}-${removed}${OFF}"
+fi
+
+# Rate limits: how much of the 5-hour and weekly budget is already spent.
+limits=""
+(( rl5 >= 0 )) && limits+="$(lim_colour "$rl5")5h ${rl5}%${OFF}"
+(( rl7 >= 0 )) && { [[ -n $limits ]] && limits+="${DIM} ${OFF}"; limits+="$(lim_colour "$rl7")7d ${rl7}%${OFF}"; }
+[[ -n $limits ]] && row1+="${sep}${limits}"
+
+# ── Row 2: trending repos, rotating every 30 minutes ──────────────────────
 NAMES="$HOME/.cache/gh-trending.names"
 GROUP=5
-ROTATE=1800          # 30 minutes
+ROTATE=1800
 
+row2=""
 if [[ -r $NAMES ]]; then
   total=$(grep -c . "$NAMES" 2>/dev/null || echo 0)
   if (( total > 0 )); then
     groups=$(( (total + GROUP - 1) / GROUP ))
     g=$(( ($(date +%s) / ROTATE) % groups ))
     start=$(( g * GROUP + 1 ))
-    sep=""
+    rsep=""
     while IFS= read -r name; do
       [[ -z $name ]] && continue
-      # OSC 8 hyperlink; the URL is always github.com/<owner>/<repo>
-      link_open="${E}]8;;https://github.com/${name}${E}\\"
-      link_close="${E}]8;;${E}\\"
-      row2+="${sep}${link_open}${YEL}${name}${OFF}${link_close}"
-      sep="${DIM} / ${OFF}"
+      row2+="${rsep}${E}]8;;https://github.com/${name}${E}\\${YEL}${name}${OFF}${E}]8;;${E}\\"
+      rsep="${DIM} / ${OFF}"
     done < <(sed -n "${start},$((start + GROUP - 1))p" "$NAMES")
   fi
 fi

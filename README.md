@@ -30,6 +30,23 @@ changes. It is safe to re-run: anything it replaces is copied to
 `install.sh` prompts for them on a fresh machine. `~/.zshrc.local` is sourced at
 the end of `.zshrc` for anything machine-specific.
 
+## Claude Code status line
+
+`bin/claude-statusline` renders two rows:
+
+```
+Opus 5 1M high  ·  ~/dotfiles main  ·  ctx 73%  ·  $22.94  ·  5h 1% 7d 2%
+mudler/LocalAI / bytedance/deer-flow / aden-hive/hive / khoj-ai/khoj / …
+```
+
+`ctx` is context remaining — green, yellow under 35%, red under 15%, i.e. time
+to `/compact`. `5h` / `7d` are rate-limit budget used, dim until 70%, red at 90%.
+Repo names on row 2 are clickable links.
+
+`install.sh` merges the `statusLine` key into `~/.claude/settings.json` without
+touching your other settings — that file is not symlinked because Claude Code
+rewrites it itself.
+
 ## Shell
 
 Plugins are managed by [antidote](https://antidote.sh) from `home/zsh_plugins.txt`.

@@ -52,6 +52,32 @@ if [[ ! -f "$HOME/.gitconfig.local" ]]; then
 EOF
 fi
 
+
+# The Claude Code status line lives in ~/.claude/settings.json, which Claude
+# Code rewrites itself — so it is not symlinked. Merge our key in, leaving
+# every other setting untouched.
+if command -v python3 >/dev/null; then
+  info "Wiring the Claude Code status line"
+  DOTFILES="$DOTFILES" python3 - <<'PYEOF'
+import json, os
+p = os.path.expanduser("~/.claude/settings.json")
+os.makedirs(os.path.dirname(p), exist_ok=True)
+try:
+    with open(p) as f:
+        settings = json.load(f)
+except Exception:
+    settings = {}
+settings["statusLine"] = {
+    "type": "command",
+    "command": os.path.join(os.environ["DOTFILES"], "bin", "claude-statusline"),
+    "padding": 0,
+}
+with open(p, "w") as f:
+    json.dump(settings, f, indent=2)
+print(f"    statusLine -> {settings['statusLine']['command']}")
+PYEOF
+fi
+
 if [[ "${1:-}" == "--full" ]]; then
   info "Installing Homebrew packages (this takes a while)"
   command -v brew >/dev/null || {
