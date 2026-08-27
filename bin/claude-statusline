@@ -35,15 +35,16 @@ if [[ -r $NAMES ]]; then
     groups=$(( (total + GROUP - 1) / GROUP ))
     g=$(( ($(date +%s) / ROTATE) % groups ))
     start=$(( g * GROUP + 1 ))
-    # Same separator before every repo, including the first — it also divides
-    # the repo list from the branch.
-    sep="  ${DIM}·${OFF}  "
+    # Plain gap before the first repo so the branch doesn't read as part of
+    # the list; " / " between repos thereafter.
+    sep="  "
     while IFS= read -r name; do
       [[ -z $name ]] && continue
       # OSC 8 hyperlink; the URL is always github.com/<owner>/<repo>
       link_open="${E}]8;;https://github.com/${name}${E}\\"
       link_close="${E}]8;;${E}\\"
       out+="${sep}${link_open}${YEL}${name}${OFF}${link_close}"
+      sep="${DIM} / ${OFF}"
     done < <(sed -n "${start},$((start + GROUP - 1))p" "$NAMES")
   fi
 fi

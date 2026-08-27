@@ -120,7 +120,7 @@ def _write_lines(repos):
         chunk = names[i:i + GROUP_SIZE]
         if len(chunk) < GROUP_SIZE and len(names) >= GROUP_SIZE:
             chunk = (chunk + names)[:GROUP_SIZE]      # wrap rather than show a short group
-        groups.append(base64.b64encode("  ·  ".join(chunk).encode()).decode())
+        groups.append(base64.b64encode(" / ".join(chunk).encode()).decode())
     _atomic(GROUPS, "\n".join(groups) + "\n")
 
 def _load():
