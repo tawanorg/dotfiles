@@ -9,7 +9,10 @@ rotate through them one at a time, for display in a status bar.
 import json, os, sys, time, urllib.request, urllib.error, urllib.parse, subprocess, random
 
 CACHE = os.path.expanduser("~/.cache/gh-trending.json")
-LINES = os.path.expanduser("~/.cache/gh-trending.lines")
+LINES  = os.path.expanduser("~/.cache/gh-trending.lines")
+NAMES  = os.path.expanduser("~/.cache/gh-trending.names")
+GROUPS = os.path.expanduser("~/.cache/gh-trending.groups")
+GROUP_SIZE = 5
 MAX_AGE = 6 * 3600          # refetch at most every 6 hours
 API = "https://api.github.com/search/repositories"
 
@@ -92,18 +95,33 @@ def refresh():
     return repos
 
 def _write_lines(repos):
-    """Pre-render each entry and base64 it.
+    """Pre-render every form a consumer might need, so display costs nothing.
 
-    The zsh prompt hook fires on every Enter, so it must not spawn a process.
-    Storing the exact bytes iTerm2's SetUserVar wants means the hook is a
-    single printf of a string we already computed here.
+    .names  plain owner/repo, one per line   -> claude-statusline (sed, no decode)
+    .groups base64 of GROUP_SIZE names joined -> iTerm2 user var (printf only)
+
+    Groups are precomputed because the zsh prompt hook cannot join or base64
+    anything without spawning a process.
     """
     import base64
-    out = [base64.b64encode(_fmt(r).encode()).decode() for r in repos]
-    tmp = LINES + ".tmp"
-    with open(tmp, "w") as f:
-        f.write("\n".join(out) + "\n")
-    os.replace(tmp, LINES)
+    names = [r["name"] for r in repos]
+
+    def _atomic(path, text):
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            f.write(text)
+        os.replace(tmp, path)
+
+    _atomic(NAMES, "\n".join(names) + "\n")
+    _atomic(LINES, "\n".join(base64.b64encode(n.encode()).decode() for n in names) + "\n")
+
+    groups = []
+    for i in range(0, len(names), GROUP_SIZE):
+        chunk = names[i:i + GROUP_SIZE]
+        if len(chunk) < GROUP_SIZE and len(names) >= GROUP_SIZE:
+            chunk = (chunk + names)[:GROUP_SIZE]      # wrap rather than show a short group
+        groups.append(base64.b64encode("  ·  ".join(chunk).encode()).decode())
+    _atomic(GROUPS, "\n".join(groups) + "\n")
 
 def _load():
     try:

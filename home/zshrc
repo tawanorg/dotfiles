@@ -177,14 +177,15 @@ gclone() { git clone "$1" && cd "$(basename "$1" .git)"; }
 f() { local file; file=$(fzf --preview 'bat --color=always {}') && $EDITOR "$file"; }
 
 # ── iTerm2 status bar: trending GitHub repos ──────────────────────────────
-# `gh-trending` caches pre-rendered, base64-encoded lines. This hook runs on
-# every prompt, so it does no work beyond a printf of a string already computed.
+# gh-trending precomputes groups of 5 repo names, already base64-encoded for
+# SetUserVar. This hook runs on every prompt, so it only does arithmetic and a
+# printf — no subprocess, no decoding.
 if [[ $TERM_PROGRAM == iTerm.app ]]; then
-  typeset -ga _gh_trending_lines
-  typeset -gi _gh_trending_idx=1
-  _gh_trending_cache=~/.cache/gh-trending.lines
+  zmodload -F zsh/datetime p:EPOCHSECONDS
+  typeset -ga _gh_trending_groups
+  _gh_trending_cache=~/.cache/gh-trending.groups
 
-  [[ -r $_gh_trending_cache ]] && _gh_trending_lines=("${(@f)$(<$_gh_trending_cache)}")
+  [[ -r $_gh_trending_cache ]] && _gh_trending_groups=("${(@f)$(<$_gh_trending_cache)}")
 
   # Refresh once per shell, in the background, if the cache is missing or >6h old.
   if [[ ! -f $_gh_trending_cache || -n $_gh_trending_cache(#qN.mh+6) ]]; then
@@ -192,10 +193,11 @@ if [[ $TERM_PROGRAM == iTerm.app ]]; then
   fi
 
   _gh_trending_precmd() {
-    (( $#_gh_trending_lines )) || return
-    # OSC 1337 SetUserVar — readable in the status bar as \(user.trending)
-    printf '\e]1337;SetUserVar=trending=%s\a' "$_gh_trending_lines[_gh_trending_idx]"
-    (( _gh_trending_idx = _gh_trending_idx % $#_gh_trending_lines + 1 ))
+    (( $#_gh_trending_groups )) || return
+    # Keyed off the wall clock: the same group shows for a whole 30 minutes,
+    # so the bar holds still instead of changing on every prompt.
+    local i=$(( (EPOCHSECONDS / 1800) % $#_gh_trending_groups + 1 ))
+    printf '\e]1337;SetUserVar=trending=%s\a' "$_gh_trending_groups[i]"
   }
   autoload -Uz add-zsh-hook
   add-zsh-hook precmd _gh_trending_precmd

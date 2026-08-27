@@ -49,8 +49,10 @@ Worth knowing:
 
 ## iTerm2 status bar: trending repos
 
-The status bar rotates through interesting self-hosted / AI / MCP / dev-tooling
-repos, advancing one entry each time you hit Enter.
+Claude Code's status line and the iTerm2 status bar both show **5** interesting
+self-hosted / AI / MCP / dev-tooling repos, rotating to the next 5 every
+**30 minutes**. In Claude Code each name is an OSC 8 hyperlink — click to open
+the repo. 25 groups cover a 12.5-hour cycle.
 
 ```bash
 gh-trending --refresh   # force a fetch (also runs in the background when >6h old)

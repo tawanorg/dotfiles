@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# Claude Code status line. Receives session JSON on stdin, prints one line.
-# Kept in bash+jq rather than python: this runs on every refresh, so process
-# startup cost matters.
+# Claude Code status line. Reads session JSON on stdin, prints one line.
+# Runs on every refresh, so it stays in bash+jq and does no decoding: the
+# cache files are pre-rendered by gh-trending.
 input=$(cat)
 
-# Tab-separated, and split on tab only — model names contain spaces ("Opus 5").
+# Tab-separated, split on tab only — model names contain spaces ("Opus 5").
 IFS=$'\t' read -r model dir <<<"$(jq -r '[(.model.display_name // "claude"),
                                           (.workspace.current_dir // .cwd // "")]
                                          | @tsv' <<<"$input")"
 
-# ~ instead of the full home path
 short_dir="${dir/#$HOME/\~}"
 
 branch=""
@@ -17,29 +16,36 @@ if [[ -n $dir ]] && b=$(git -C "$dir" branch --show-current 2>/dev/null) && [[ -
   branch="$b"
 fi
 
-# Trending repo, advancing once a minute. Time-based rather than a counter so
-# it rotates on its own without the status line having to keep state.
-repo=""
-LINES="$HOME/.cache/gh-trending.lines"
-if [[ -r $LINES ]]; then
-  n=$(grep -c . "$LINES" 2>/dev/null || echo 0)
-  if (( n > 0 )); then
-    idx=$(( ($(date +%s) / 60) % n + 1 ))
-    repo=$(sed -n "${idx}p" "$LINES" | base64 --decode 2>/dev/null)
-  fi
-fi
-
-# Build with ANSI-C quoted variables and print with %s only: nesting escape
-# sequences inside a printf *format* string mangles them.
 E=$'\033'
 CYAN="${E}[36m"; DIM="${E}[2m"; YEL="${E}[33m"; MAG="${E}[35m"; OFF="${E}[0m"
 
 out="${CYAN}${model}${OFF} ${DIM}${short_dir}${OFF}"
 [[ -n $branch ]] && out+=" ${MAG}${branch}${OFF}"
-if [[ -n $repo ]]; then
-  # OSC 8 hyperlink — the repo name is the clickable text.
-  link_open="${E}]8;;https://github.com/${repo}${E}\\"
-  link_close="${E}]8;;${E}\\"
-  out+="  ${DIM}·${OFF}  ${link_open}${YEL}${repo}${OFF}${link_close}"
+
+# ── Trending repos ────────────────────────────────────────────────────────
+# GROUP repos advance once every ROTATE seconds, keyed off the wall clock so
+# the line is stable between refreshes and needs no stored state.
+NAMES="$HOME/.cache/gh-trending.names"
+GROUP=5
+ROTATE=1800          # 30 minutes
+
+if [[ -r $NAMES ]]; then
+  total=$(grep -c . "$NAMES" 2>/dev/null || echo 0)
+  if (( total > 0 )); then
+    groups=$(( (total + GROUP - 1) / GROUP ))
+    g=$(( ($(date +%s) / ROTATE) % groups ))
+    start=$(( g * GROUP + 1 ))
+    # Same separator before every repo, including the first — it also divides
+    # the repo list from the branch.
+    sep="  ${DIM}·${OFF}  "
+    while IFS= read -r name; do
+      [[ -z $name ]] && continue
+      # OSC 8 hyperlink; the URL is always github.com/<owner>/<repo>
+      link_open="${E}]8;;https://github.com/${name}${E}\\"
+      link_close="${E}]8;;${E}\\"
+      out+="${sep}${link_open}${YEL}${name}${OFF}${link_close}"
+    done < <(sed -n "${start},$((start + GROUP - 1))p" "$NAMES")
+  fi
 fi
+
 printf '%s\n' "$out"
