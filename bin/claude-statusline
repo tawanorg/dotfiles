@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
 # Claude Code status line.
 #
-# Row 1: session health — model, effort, dir/branch, context left, cost, limits
+# Row 1: session health — model, effort, dir/branch, context left, rate limits
 # Row 2: trending open-source repos (clickable)
 #
 # Runs on every refresh, so it stays in bash+jq: one jq call, no decoding.
 # Field names come from the real payload Claude Code sends on stdin.
 input=$(cat)
 
-IFS=$'\t' read -r model dir ctx cost rl5 rl7 effort added removed <<<"$(jq -r '
+IFS=$'\t' read -r model dir ctx rl5 rl7 effort added removed <<<"$(jq -r '
   [ (.model.display_name // "claude"),
     (.workspace.current_dir // .cwd // "-"),
     (.context_window.remaining_percentage // -1),
-    (.cost.total_cost_usd // -1),
     (.rate_limits.five_hour.used_percentage // -1),
     (.rate_limits.seven_day.used_percentage // -1),
     (.effort.level // "-"),
@@ -54,9 +53,6 @@ if (( ctx >= 0 )); then
   row1+="${sep}$(ctx_colour "$ctx")ctx ${ctx}%${OFF}"
 fi
 
-if [[ $cost != "-1" ]]; then
-  row1+="${sep}${DIM}\$$(printf '%.2f' "$cost")${OFF}"
-fi
 
 if (( added > 0 || removed > 0 )); then
   row1+="${sep}${GRN}+${added}${OFF}${DIM}/${OFF}${RED}-${removed}${OFF}"
