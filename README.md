@@ -66,6 +66,10 @@ and writes pre-rendered base64 lines to `~/.cache/gh-trending.lines`. The zsh
 variable, so it adds no measurable cost per prompt. The status bar shows it via
 the interpolated string `\(user.trending)`.
 
+The same projects are archived daily to
+[tawanorg/trending-open-sources](https://github.com/tawanorg/trending-open-sources)
+by GitHub Actions, so nothing that scrolls past is lost.
+
 Unauthenticated the search API allows 10 requests/min, which is plenty at a 6h
 refresh. If `gh auth login` has been run, the script picks up that token
 automatically and gets 5000/hr.
