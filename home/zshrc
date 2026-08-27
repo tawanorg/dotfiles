@@ -6,6 +6,7 @@
 # ── PATH ──────────────────────────────────────────────────────────────────
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"                       # pipx / uv tools
+export PATH="$HOME/dotfiles/bin:$PATH"                     # scripts kept in the dotfiles repo
 export PATH="$HOME/go/bin:$PATH"                           # go install binaries
 export PATH="/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
 # GNU coreutils/sed without the `g` prefix (matches Linux/CI behaviour)
@@ -174,6 +175,34 @@ gclone() { git clone "$1" && cd "$(basename "$1" .git)"; }
 
 # f — fuzzy-find a file and open it in the editor
 f() { local file; file=$(fzf --preview 'bat --color=always {}') && $EDITOR "$file"; }
+
+# ── iTerm2 status bar: trending GitHub repos ──────────────────────────────
+# `gh-trending` caches pre-rendered, base64-encoded lines. This hook runs on
+# every prompt, so it does no work beyond a printf of a string already computed.
+if [[ $TERM_PROGRAM == iTerm.app ]]; then
+  typeset -ga _gh_trending_lines
+  typeset -gi _gh_trending_idx=1
+  _gh_trending_cache=~/.cache/gh-trending.lines
+
+  [[ -r $_gh_trending_cache ]] && _gh_trending_lines=("${(@f)$(<$_gh_trending_cache)}")
+
+  # Refresh once per shell, in the background, if the cache is missing or >6h old.
+  if [[ ! -f $_gh_trending_cache || -n $_gh_trending_cache(#qN.mh+6) ]]; then
+    (gh-trending --refresh >/dev/null 2>&1 &) 2>/dev/null
+  fi
+
+  _gh_trending_precmd() {
+    (( $#_gh_trending_lines )) || return
+    # OSC 1337 SetUserVar — readable in the status bar as \(user.trending)
+    printf '\e]1337;SetUserVar=trending=%s\a' "$_gh_trending_lines[_gh_trending_idx]"
+    (( _gh_trending_idx = _gh_trending_idx % $#_gh_trending_lines + 1 ))
+  }
+  autoload -Uz add-zsh-hook
+  add-zsh-hook precmd _gh_trending_precmd
+
+  alias trending='gh-trending --list | less -R'
+  alias trending-open='open "$(gh-trending --url)"'
+fi
 
 # ── Local overrides (machine-specific, not committed anywhere) ────────────
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

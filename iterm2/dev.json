@@ -247,7 +247,35 @@
         "Alpha Component": 1.0,
         "Color Space": "sRGB"
       },
-      "Non Ascii Font": "MesloLGSNFM-Regular 14"
+      "Non Ascii Font": "MesloLGSNFM-Regular 14",
+      "Show Status Bar": true,
+      "Status Bar Layout": {
+        "components": [
+          {
+            "class": "iTermStatusBarAttributedTextComponent",
+            "configuration": {
+              "knobs": {
+                "text": "\\(user.trending)",
+                "base: compression resistance": 1,
+                "base: priority": 5
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarSpringComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 1
+              }
+            }
+          }
+        ],
+        "advanced configuration": {
+          "font": "MesloLGSNFM-Regular 12",
+          "algorithm": 1,
+          "remove empty components": true
+        }
+      }
     }
   ]
 }

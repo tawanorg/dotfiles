@@ -47,6 +47,27 @@ Worth knowing:
 | `Ctrl-O` | copy the current command line |
 | `Enter` (empty line) | `git status -sb` in a repo, else `ls` |
 
+## iTerm2 status bar: trending repos
+
+The status bar rotates through interesting self-hosted / AI / MCP / dev-tooling
+repos, advancing one entry each time you hit Enter.
+
+```bash
+gh-trending --refresh   # force a fetch (also runs in the background when >6h old)
+trending                # page through everything cached
+trending-open           # open the current repo in a browser
+```
+
+`bin/gh-trending` queries the GitHub search API across several topics, dedupes,
+and writes pre-rendered base64 lines to `~/.cache/gh-trending.lines`. The zsh
+`precmd` hook does nothing but `printf` one of those lines as an iTerm2 user
+variable, so it adds no measurable cost per prompt. The status bar shows it via
+the interpolated string `\(user.trending)`.
+
+Unauthenticated the search API allows 10 requests/min, which is plenty at a 6h
+refresh. If `gh auth login` has been run, the script picks up that token
+automatically and gets 5000/hr.
+
 ## macOS settings
 
 `macos/defaults.sh` remaps **⌘Space to switch input source** (Spotlight moves to
