@@ -63,17 +63,36 @@ fi
 
 # Skills that live in their own repo stay a live checkout (gitignored here), so
 # you can edit and push them without bumping a pointer in this repo.
+#
+# A repo whose SKILL.md sits at the root is cloned straight to
+# claude/skills/<name>. A repo that ships its skill in a subdirectory declares
+# that path in external.json; it is cloned to claude/skills/.repos/<name> and
+# the subdirectory is symlinked into place, because Claude Code only finds a
+# skill at exactly claude/skills/<name>/SKILL.md.
 if command -v python3 >/dev/null; then
-  while IFS=$'\t' read -r name url; do
+  while IFS=$'\t' read -r name url subpath; do
     [[ -n $name ]] || continue
-    dest="$DOTFILES/claude/skills/$name"
+    if [[ -n $subpath ]]; then
+      dest="$DOTFILES/claude/skills/.repos/$name"
+    else
+      dest="$DOTFILES/claude/skills/$name"
+    fi
     if [[ -d $dest/.git ]]; then
       git -C "$dest" pull --ff-only --quiet 2>/dev/null \
         && printf '    pull %s\n' "$name" \
         || warn "could not update $name (local changes?) - left alone"
     else
       info "Cloning skill $name"
+      mkdir -p "$(dirname "$dest")"
       git clone --quiet "$url" "$dest" || warn "clone failed: $url"
+    fi
+    if [[ -n $subpath ]]; then
+      if [[ -d "$dest/$subpath" ]]; then
+        ln -sfn "$dest/$subpath" "$DOTFILES/claude/skills/$name"
+        printf '    link claude/skills/%s -> .repos/%s/%s\n' "$name" "$name" "$subpath"
+      else
+        warn "$name: '$subpath' not found in the clone - skill not linked"
+      fi
     fi
   done < <(python3 -c '
 import json, sys
@@ -81,8 +100,13 @@ try:
     d = json.load(open(sys.argv[1]))
 except FileNotFoundError:
     raise SystemExit
-for name, url in (d.get("skills") or {}).items():
-    print(f"{name}\t{url}")
+for name, spec in (d.get("skills") or {}).items():
+    # A bare string is the url; a dict may also carry the skill subdirectory.
+    if isinstance(spec, str):
+        url, path = spec, ""
+    else:
+        url, path = spec.get("url", ""), spec.get("path", "")
+    print(f"{name}\t{url}\t{path}")
 ' "$DOTFILES/claude/external.json")
 fi
 

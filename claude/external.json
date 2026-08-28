@@ -1,13 +1,18 @@
 {
   "_comment": "Skills and plugins that live in their own repos. install.sh clones or updates each one; they are gitignored here so they stay a live checkout you can edit and push from directly.",
   "skills": {
-    "critical-developer-mindset": "https://github.com/tawanorg/critical-thinking.git"
+    "critical-developer-mindset": "https://github.com/tawanorg/critical-thinking.git",
+    "terraform-skill": {
+      "url": "https://github.com/antonbabenko/terraform-skill.git",
+      "path": "skills/terraform-skill"
+    }
   },
   "marketplaces": [
     "anthropics/claude-plugins-official",
     "mattpocock/skills",
     "phuryn/pm-skills",
-    "Egonex-AI/Understand-Anything"
+    "Egonex-AI/Understand-Anything",
+    "hashicorp/agent-skills"
   ],
   "plugins": [
     "mattpocock-skills@mattpocock",
@@ -20,6 +25,7 @@
     "pm-product-discovery@pm-skills",
     "pm-market-research@pm-skills",
     "pm-data-analytics@pm-skills",
-    "understand-anything@understand-anything"
+    "understand-anything@understand-anything",
+    "terraform@hashicorp"
   ]
 }

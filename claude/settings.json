@@ -11,6 +11,7 @@
   "enabledPlugins": {
     "mattpocock-skills@mattpocock": true,
     "understand-anything@understand-anything": true,
+    "terraform@hashicorp": true,
     "pm-product-discovery@pm-skills": false,
     "pm-product-strategy@pm-skills": false,
     "pm-execution@pm-skills": false,

@@ -3,3 +3,5 @@
 
 # External skills — cloned by install.sh from claude/external.json
 claude/skills/critical-developer-mindset/
+claude/skills/.repos/
+claude/skills/terraform-skill

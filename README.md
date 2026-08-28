@@ -194,9 +194,9 @@ Then commit. On the next laptop, `./install.sh` puts them back.
 
 **Plugins are tracked off by default.** `claude/settings.json` pins
 `enabledPlugins` explicitly: the developer plugins on, the nine `pm-skills`
-ones `false`. All 114 skills' names and descriptions load into *every* session
-before you type anything — the PM set alone costs ~4.4k tokens of context in
-repos where it is never used. Installed and one flag from ready beats loaded
+ones `false`. Every installed skill's name and description loads into *every*
+session before you type anything — the PM set alone is 68 skills, ~4.4k tokens
+of context in repos where it is never used. Installed and one flag from ready beats loaded
 and idle. A project that wants them turns them on in its own
 `.claude/settings.json`, which outranks user scope.
 
@@ -228,14 +228,25 @@ a second copy.
 ```json
 {
   "skills": {
-    "critical-developer-mindset": "https://github.com/tawanorg/critical-thinking.git"
+    "critical-developer-mindset": "https://github.com/tawanorg/critical-thinking.git",
+    "terraform-skill": {
+      "url": "https://github.com/antonbabenko/terraform-skill.git",
+      "path": "skills/terraform-skill"
+    }
   },
-  "marketplaces": ["anthropics/claude-plugins-official", "mattpocock/skills"],
-  "plugins": ["mattpocock-skills@mattpocock", "pm-toolkit@pm-skills"]
+  "marketplaces": ["anthropics/claude-plugins-official", "hashicorp/agent-skills"],
+  "plugins": ["mattpocock-skills@mattpocock", "terraform@hashicorp"]
 }
 ```
 
 Adding one takes two edits: the entry above, and a matching `.gitignore` line.
+
+A skill entry is **either a URL string or an object**. Use the string when
+`SKILL.md` sits at the repo root. Use the object when the repo ships its skill
+in a subdirectory — Claude Code only looks at exactly
+`claude/skills/<name>/SKILL.md`, so a nested one would never be found. Given a
+`path`, `install.sh` clones to `claude/skills/.repos/<name>` and symlinks the
+subdirectory into place. Both the clone and the symlink are gitignored.
 
 **Plugins** are registered through the `claude` CLI, which owns their on-disk
 state — `install.sh` adds each marketplace and installs any plugin not already
@@ -253,6 +264,8 @@ then record it in `external.json` so the next laptop gets it too.
 | **mattpocock-skills** | 25 skills for underspecified work: `grilling` interrogates a plan in rounds before you build, `to-spec` and `to-tickets` turn a conversation into something actionable, `triage` writes agent-ready briefs. |
 | **pm-skills** (9 plugins) | The consulting side of a one-person business: NDAs and privacy policies, pricing and value-prop, ICP and go-to-market, plus `pm-ai-shipping` for auditing AI-written code (`intended-vs-implemented`, `ship-check`). |
 | **understand-anything** | Builds a queryable knowledge graph of a codebase, then answers from it: `/understand` maps architecture into layers, `/understand-explain` deep-dives one file or module, `/understand-diff` reads a PR for affected components and risk, `/understand-onboard` writes the guide for someone joining. Aimed at the codebase you have just inherited. |
+| **terraform-skill** | One diagnosis-first skill for *using* Terraform/OpenTofu: it categorises the failure mode — identity churn, secret exposure, blast radius, CI drift, state corruption — before proposing a fix, and forces every answer to state its version floor and tradeoffs. [antonbabenko/terraform-skill](https://github.com/antonbabenko/terraform-skill). |
+| **terraform@hashicorp** | HashiCorp's official plugin, 16 skills. Worth knowing the weighting: nine are about *authoring* Terraform providers in Go (`new-terraform-provider`, `provider-framework-migration`, `run-acceptance-tests`). The rest apply to consuming Terraform — `terraform-style-guide`, `terraform-test`, `refactor-module`, `terraform-stacks`, `terraform-search-import`, `terraform-policy`. |
 | **critical-developer-mindset** | A 7-step pass over any ticket — question, research, validate, expand, secure, future, implement — on the principle that *AC is scope, not specification*. Written for tickets that arrive underspecified. |
 
 ### Toolchain — 45 formulae, 7 casks
