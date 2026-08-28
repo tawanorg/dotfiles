@@ -6,7 +6,8 @@
   "marketplaces": [
     "anthropics/claude-plugins-official",
     "mattpocock/skills",
-    "phuryn/pm-skills"
+    "phuryn/pm-skills",
+    "Egonex-AI/Understand-Anything"
   ],
   "plugins": [
     "mattpocock-skills@mattpocock",
@@ -18,6 +19,7 @@
     "pm-execution@pm-skills",
     "pm-product-discovery@pm-skills",
     "pm-market-research@pm-skills",
-    "pm-data-analytics@pm-skills"
+    "pm-data-analytics@pm-skills",
+    "understand-anything@understand-anything"
   ]
 }
