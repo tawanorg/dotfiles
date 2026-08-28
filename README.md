@@ -75,8 +75,62 @@ mudler/LocalAI / bytedance/deer-flow / aden-hive/hive / khoj-ai/khoj / …
 | `+120/-8` | Lines added/removed this session, when non-zero |
 | Row 2 | 5 trending repos, rotating every 30 min — each name is a clickable link |
 
-Installed by merging a `statusLine` key into `~/.claude/settings.json`,
-leaving your other settings untouched.
+Installed by merging `claude/settings.json` into `~/.claude/settings.json`,
+leaving your other settings untouched. That tracked file also carries the
+`model`, `theme` and `tui` preferences — and
+`skipDangerousModePermissionPrompt`, which suppresses the confirmation before
+`--dangerously-skip-permissions`. Drop that key if you would rather each new
+machine ask.
+
+### Claude Code skills, commands, agents and MCP servers
+
+Everything you teach Claude Code travels with the repo, so a new laptop starts
+with the same slash commands and skills as the old one.
+
+| Path in repo | Linked to | Holds |
+|---|---|---|
+| `claude/skills/` | `~/.claude/skills` | One folder per skill, each with a `SKILL.md` |
+| `claude/commands/` | `~/.claude/commands` | One `.md` per slash command — `foo.md` is `/foo` |
+| `claude/agents/` | `~/.claude/agents` | One `.md` per subagent |
+| `claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Global instructions — linked only if you create it |
+
+These are **directory** symlinks, so anything you add later is tracked with no
+further wiring: write `claude/commands/review.md`, and `/review` works at once.
+
+```
+claude/
+├── commands/
+│   └── review.md          ->  /review
+├── skills/
+│   └── deploy/
+│       └── SKILL.md       ->  the "deploy" skill
+└── agents/
+    └── triage.md          ->  the "triage" subagent
+```
+
+**MCP servers** can't be symlinked — they live in `~/.claude.json`, a state file
+Claude Code rewrites constantly. So `claude/mcp.json` holds the definitions and
+`install.sh` merges them in, leaving every other server and all your session
+state alone.
+
+```bash
+claude mcp add --transport http sentry https://mcp.sentry.dev/mcp -s user
+claude-mcp-export     # capture this machine's servers into claude/mcp.json
+```
+
+Then commit. On the next laptop, `./install.sh` puts them back.
+
+**Secrets never enter this repo.** `claude-mcp-export` skips any server with a
+literal value under a key like `token`, `api_key` or `password`, and tells you
+which. Two ways to keep those working:
+
+| Approach | Where it goes |
+|---|---|
+| `"GITHUB_TOKEN": "${GITHUB_TOKEN}"` — Claude Code expands it at launch | tracked, safe |
+| The whole server definition, secret and all | `~/.claude/mcp.local.json`, untracked, merged last |
+
+Connectors you authorise on claude.ai — Gmail, Drive, Atlassian — are tied to
+your account, not this machine, so they follow you without any config here.
 
 ### Toolchain — 44 formulae, 6 casks
 
@@ -165,8 +219,11 @@ Then open a **new iTerm2 window** to pick up the Dev profile.
   and `docker compose` work normally.
 - **Git identity** — lives in `~/.gitconfig.local`, untracked, so this repo can
   stay public. The tracked `gitconfig` pulls it in via `[include]`.
-- **`~/.claude/settings.json`** — not symlinked, because Claude Code rewrites it.
-  `install.sh` merges in only the `statusLine` key.
+- **`~/.claude/settings.json` and `~/.claude.json`** — not symlinked, because
+  Claude Code rewrites both. `install.sh` merges in the keys from
+  `claude/settings.json` and the servers from `claude/mcp.json`.
+- **MCP secrets** — live in `~/.claude/mcp.local.json`, untracked, so this repo
+  can stay public. `install.sh` merges it last.
 - **Machine-specific shell config** — put it in `~/.zshrc.local`, sourced last.
 
 ## Layout
@@ -176,6 +233,8 @@ Then open a **new iTerm2 window** to pick up the Dev profile.
 | `home/*` | `~/.<name>` — zshrc, zsh_plugins.txt, gitconfig, tmux.conf … |
 | `config/*` | `~/.config/` — starship, nvim, bat |
 | `iterm2/dev.json` | iTerm2 DynamicProfiles |
+| `claude/skills`, `claude/commands`, `claude/agents` | `~/.claude/` — Claude Code skills, slash commands, subagents |
+| `claude/settings.json`, `claude/mcp.json` | merged into `~/.claude/settings.json` and `~/.claude.json` |
 | `bin/*` | on `PATH` via `.zshrc` |
 | `macos/defaults.sh` | system settings (not linked — run by `--full`) |
 | `Brewfile` | every formula and cask |

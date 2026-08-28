@@ -53,28 +53,76 @@ EOF
 fi
 
 
-# The Claude Code status line lives in ~/.claude/settings.json, which Claude
-# Code rewrites itself — so it is not symlinked. Merge our key in, leaving
-# every other setting untouched.
+info "Linking Claude Code skills, commands and agents"
+link "$DOTFILES/claude/skills"   "$HOME/.claude/skills"
+link "$DOTFILES/claude/commands" "$HOME/.claude/commands"
+link "$DOTFILES/claude/agents"   "$HOME/.claude/agents"
+if [[ -e "$DOTFILES/claude/CLAUDE.md" ]]; then
+  link "$DOTFILES/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+fi
+
+# Claude Code rewrites ~/.claude/settings.json and ~/.claude.json itself, so
+# neither can be symlinked. Merge our keys in, leaving everything else alone.
 if command -v python3 >/dev/null; then
-  info "Wiring the Claude Code status line"
+  info "Merging Claude Code settings and MCP servers"
   DOTFILES="$DOTFILES" python3 - <<'PYEOF'
-import json, os
-p = os.path.expanduser("~/.claude/settings.json")
-os.makedirs(os.path.dirname(p), exist_ok=True)
-try:
-    with open(p) as f:
-        settings = json.load(f)
-except Exception:
-    settings = {}
-settings["statusLine"] = {
-    "type": "command",
-    "command": os.path.join(os.environ["DOTFILES"], "bin", "claude-statusline"),
-    "padding": 0,
-}
-with open(p, "w") as f:
-    json.dump(settings, f, indent=2)
-print(f"    statusLine -> {settings['statusLine']['command']}")
+import json, os, tempfile
+
+DOTFILES = os.environ["DOTFILES"]
+HOME = os.path.expanduser("~")
+
+
+def load(path, default):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return default
+    except json.JSONDecodeError:
+        print(f"    warn {path} is not valid JSON - leaving it alone")
+        raise SystemExit(0)
+
+
+def save(path, data):
+    """Write atomically: a half-written ~/.claude.json would lose real state."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path))
+    with os.fdopen(fd, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+
+
+def expand(value):
+    """Substitute {{DOTFILES}} so tracked paths work from any clone location."""
+    if isinstance(value, str):
+        return value.replace("{{DOTFILES}}", DOTFILES)
+    if isinstance(value, dict):
+        return {k: expand(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [expand(v) for v in value]
+    return value
+
+
+# settings.json - our tracked keys win, any local-only key is preserved.
+tracked = expand(load(f"{DOTFILES}/claude/settings.json", {}))
+settings_path = f"{HOME}/.claude/settings.json"
+settings = load(settings_path, {})
+settings.update(tracked)
+save(settings_path, settings)
+print(f"    settings {', '.join(sorted(tracked))}")
+
+# MCP servers live in ~/.claude.json under "mcpServers" (user scope). Secrets
+# stay out of this repo: put those servers in ~/.claude/mcp.local.json, which
+# is untracked and merged last.
+servers = expand(load(f"{DOTFILES}/claude/mcp.json", {}).get("mcpServers", {}))
+servers.update(load(f"{HOME}/.claude/mcp.local.json", {}).get("mcpServers", {}))
+if servers:
+    config_path = f"{HOME}/.claude.json"
+    config = load(config_path, {})
+    config.setdefault("mcpServers", {}).update(servers)
+    save(config_path, config)
+    print(f"    mcp {', '.join(sorted(servers))}")
 PYEOF
 fi
 

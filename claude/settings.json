@@ -1,0 +1,11 @@
+{
+  "model": "opus[1m]",
+  "theme": "dark",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "type": "command",
+    "command": "{{DOTFILES}}/bin/claude-statusline",
+    "padding": 0
+  }
+}

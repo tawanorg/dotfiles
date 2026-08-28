@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Capture the user-scope MCP servers configured on this machine into
+# claude/mcp.json, so ./install.sh reproduces them on the next laptop.
+#
+# Anything holding a secret is skipped and reported: keep those in
+# ~/.claude/mcp.local.json (untracked), or reference ${ENV_VAR} in the value,
+# which Claude Code expands at launch.
+set -euo pipefail
+
+DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+DOTFILES="$DOTFILES" python3 - <<'PYEOF'
+import json, os, re, tempfile
+
+DOTFILES = os.environ["DOTFILES"]
+dest = f"{DOTFILES}/claude/mcp.json"
+
+with open(os.path.expanduser("~/.claude.json")) as f:
+    live = json.load(f).get("mcpServers", {})
+
+SECRET = re.compile(r"key|token|secret|password|auth|credential", re.I)
+
+
+def has_secret(server):
+    """A literal value under a secret-ish name - ${VAR} references are fine."""
+    for field in ("env", "headers"):
+        for name, value in (server.get(field) or {}).items():
+            if SECRET.search(name) and "${" not in str(value):
+                return True
+    return any(SECRET.search(str(a)) and "${" not in str(a)
+               for a in server.get("args") or [])
+
+
+kept = {n: s for n, s in live.items() if not has_secret(s)}
+skipped = sorted(set(live) - set(kept))
+
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname(dest))
+with os.fdopen(fd, "w") as f:
+    json.dump({"mcpServers": kept}, f, indent=2)
+    f.write("\n")
+os.replace(tmp, dest)
+
+print(f"{len(kept)} server(s) -> claude/mcp.json" + (f": {', '.join(sorted(kept))}" if kept else ""))
+if skipped:
+    print(f"skipped (secrets in the config): {', '.join(skipped)}")
+    print("  -> move these to ~/.claude/mcp.local.json, or use ${ENV_VAR} values")
+PYEOF
