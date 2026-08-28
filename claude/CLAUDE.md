@@ -49,6 +49,15 @@ Three tools overlap; they answer different shapes of question:
 - **Explore agent** — a broad sweep where only the conclusion matters and the
   file dumps do not.
 
+## Delegating to a subagent
+
+Delegate when the work produces **large intermediate output but a small
+conclusion** — a Terraform plan, a document corpus, a sweep of routes. The
+separate context window is the point: the bulk stays out of this session.
+Do not delegate interactive work, where you need the state visible between
+turns. `terraform-plan-reviewer`, `doc-researcher` and `page-smoke-checker`
+are local; write more in `claude/agents/` when the same shape recurs.
+
 ## Reviewing
 
 `/code-review` (built in) and `mattpocock-skills:code-review` both exist and do

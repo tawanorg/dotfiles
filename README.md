@@ -105,7 +105,10 @@ claude/
 │   ├── docling/
 │   │   └── SKILL.md                 ->  the "docling" skill
 │   └── critical-developer-mindset/  ->  cloned, not vendored (see below)
-└── agents/                          ->  empty: drop triage.md here, get "triage"
+└── agents/
+    ├── terraform-plan-reviewer.md   ->  the "terraform-plan-reviewer" subagent
+    ├── doc-researcher.md            ->  the "doc-researcher" subagent
+    └── page-smoke-checker.md        ->  the "page-smoke-checker" subagent
 ```
 
 **What this repo teaches the agent today.** Two of these are authored here; the
@@ -116,8 +119,20 @@ rest arrive as plugins or clones, covered further down.
 | `/digest <file-or-folder> [out]` | command | Batch-converts PDFs, Word, PowerPoint and Excel into a Markdown corpus, writes an `INDEX.md` so later sessions read one summary instead of opening every file, and gitignores the output as a derived artifact. |
 | **docling** | skill | Fires whenever a document is in play. Chooses between the MCP tools and the CLI, and enforces the rule that keeps this usable: navigate a document by anchor, never pour a 40-page PDF into the context window. Also covers the OCR cost trap — `--no-ocr` is a large speedup on digital PDFs. |
 
-`claude/agents/` is scaffolded but empty — the symlink is live, so the first
-`.md` you drop in becomes a subagent with no further wiring.
+**Subagents earn their place on one test: large intermediate output, small
+conclusion.** A separate context window buys exactly one thing — the bulk never
+enters this session. That is why these three exist and why there are only
+three; a subagent that merely knows about a topic is a worse skill.
+
+| Subagent | Reads | Returns |
+|---|---|---|
+| **terraform-plan-reviewer** | A plan running to thousands of lines | A verdict — `SAFE`/`REVIEW`/`STOP` — with every destroy and replacement named, and the attribute forcing each one. Never applies. |
+| **doc-researcher** | A `/digest` corpus or docs tree, potentially millions of tokens | The answer with `file § heading` citations, and an explicit note when the corpus is silent. |
+| **page-smoke-checker** | Console logs, network tables and a11y snapshots across routes | A line per route: pass, fail with the causing request, or skip when a login wall made it uncheckable. |
+
+Do not delegate interactive work — debugging where the state must stay visible
+between turns belongs in the main session, and `page-smoke-checker` says so
+itself rather than doing it badly.
 
 **`claude/CLAUDE.md` routes between overlapping tools.** A skill announces
 itself through its own `description`, which is what makes it fire without being
