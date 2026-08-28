@@ -146,8 +146,8 @@ a second copy.
   "skills": {
     "critical-developer-mindset": "https://github.com/tawanorg/critical-thinking.git"
   },
-  "marketplaces": ["anthropics/claude-plugins-official"],
-  "plugins": []
+  "marketplaces": ["anthropics/claude-plugins-official", "mattpocock/skills"],
+  "plugins": ["mattpocock-skills@mattpocock", "pm-toolkit@pm-skills"]
 }
 ```
 
@@ -166,6 +166,8 @@ then record it in `external.json` so the next laptop gets it too.
 
 | Skill | What it does |
 |---|---|
+| **mattpocock-skills** | 25 skills for underspecified work: `grilling` interrogates a plan in rounds before you build, `to-spec` and `to-tickets` turn a conversation into something actionable, `triage` writes agent-ready briefs. |
+| **pm-skills** (9 plugins) | The consulting side of a one-person business: NDAs and privacy policies, pricing and value-prop, ICP and go-to-market, plus `pm-ai-shipping` for auditing AI-written code (`intended-vs-implemented`, `ship-check`). |
 | **critical-developer-mindset** | A 7-step pass over any ticket — question, research, validate, expand, secure, future, implement — on the principle that *AC is scope, not specification*. Written for tickets that arrive underspecified. |
 
 ### Toolchain — 44 formulae, 6 casks

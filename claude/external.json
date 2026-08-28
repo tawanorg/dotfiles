@@ -1,13 +1,23 @@
 {
   "_comment": "Skills and plugins that live in their own repos. install.sh clones or updates each one; they are gitignored here so they stay a live checkout you can edit and push from directly.",
-
   "skills": {
     "critical-developer-mindset": "https://github.com/tawanorg/critical-thinking.git"
   },
-
   "marketplaces": [
-    "anthropics/claude-plugins-official"
+    "anthropics/claude-plugins-official",
+    "mattpocock/skills",
+    "phuryn/pm-skills"
   ],
-
-  "plugins": []
+  "plugins": [
+    "mattpocock-skills@mattpocock",
+    "pm-ai-shipping@pm-skills",
+    "pm-toolkit@pm-skills",
+    "pm-product-strategy@pm-skills",
+    "pm-go-to-market@pm-skills",
+    "pm-marketing-growth@pm-skills",
+    "pm-execution@pm-skills",
+    "pm-product-discovery@pm-skills",
+    "pm-market-research@pm-skills",
+    "pm-data-analytics@pm-skills"
+  ]
 }
