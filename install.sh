@@ -188,6 +188,10 @@ if [[ "${1:-}" == "--full" ]]; then
   }
   brew bundle --file="$DOTFILES/Brewfile"
 
+  info "Installing uv tools"
+  # Serena's MCP server binary; the server itself is declared in claude/mcp.json.
+  uv tool install -p 3.13 serena-agent
+
   info "Installing Node LTS"
   eval "$(fnm env --shell bash)" && fnm install --lts && fnm default lts-latest
 
