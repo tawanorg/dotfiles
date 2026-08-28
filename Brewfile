@@ -67,6 +67,8 @@ brew "ripgrep"
 brew "ruff"
 # Cross-shell prompt for astronauts
 brew "starship"
+# MCP server for Terraform - registry, provider and module docs for the agent
+brew "terraform-mcp-server"
 # Simplified and community-driven man pages
 brew "tldr"
 # Terminal multiplexer

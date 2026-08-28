@@ -135,18 +135,43 @@ claude-mcp-export     # capture this machine's servers into claude/mcp.json
 | **context7** | Version-correct documentation for any library — `resolve-library-id` then `query-docs`. Answers "what does this API actually do in the version I'm on", which a search engine cannot. |
 | **graphify** | Turns a codebase — plus its docs, SQL schemas, configs and PDFs — into a knowledge graph the agent queries and cites instead of grepping. [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify). **Unvetted — see the note below.** |
 | **docling** | Reads PDFs, Word, PowerPoint, Excel and scans locally and offline. Converts a document into an anchored structure the agent navigates — overview, then search, then pull just the passages that matter — instead of pouring a 40-page PDF into the context window. |
+| **terraform** | Official HashiCorp server, 9 tools over the Terraform Registry: provider schemas, resource arguments, module docs, policies. Context7 covers libraries; this covers the Registry, which it does not. |
+| **chrome-devtools** | Official Google server driving a real Chrome: navigate, click, fill forms, read console errors, inspect network requests, screenshot. The one capability no CLI in this Brewfile replaces — the difference between reading the code and guessing, and opening the page and looking. |
+| **gcloud** | Official Google server, a single `run_gcloud_command` tool. Thin over the CLI, but it ships a denylist for interactive and arbitrary-input commands, which raw shell access does not. Inert until `gcloud auth login`. |
 
 `--full` installs the server binaries with `uv tool install` — `serena-agent`,
 plus `docling` (the batch CLI) and `docling-mcp[local]` (the MCP server, where
 the `local` extra is what keeps conversion on this machine). All three are
 pinned to Python 3.13 because they pull torch, which lags the newest CPython by
 months. `~/.local/bin` is already on `PATH`, so the bare commands resolve on any
-machine. Context7 needs no key — one only raises rate limits.
+machine. Context7 needs no key — one only raises rate limits. The Terraform
+server is a Homebrew formula instead, and Chrome DevTools and gcloud need no
+install at all — `npx` fetches the pinned version on first launch.
 
 Docling downloads ~190 MB of layout and OCR models on first use, then runs
 entirely offline. The `/digest` command and the `docling` skill drive it: the
 skill picks between the MCP tools and the CLI, `/digest` batch-converts a file
 or folder into a Markdown corpus with an `INDEX.md` for later sessions.
+
+**Every server costs context in every session.** A skill loads a name and a
+description until it is invoked; an MCP server loads *every tool's full JSON
+schema*, always, whether or not the day involves a browser. That is the same
+argument this repo makes for keeping plugins off by default, and it applies
+harder here. Chrome DevTools is the expensive one — 29 tools out of the box,
+trimmed to 24 by `--categoryPerformance=false --categoryEmulation=false`, which
+drops Lighthouse, tracing and heap snapshots. Screenshots are forced to WebP at
+1280px wide because PNG screenshots are enormous in context, and usage
+statistics are opted out. If a repo never touches a browser, move the server to
+that project's `.mcp.json` instead of carrying it everywhere.
+
+**Two servers launch through `npx`, which is why `{{HOME}}` exists.** fnm puts
+`npx` on a per-shell ephemeral path (`fnm_multishells/<pid>_<ts>/bin`), so a
+bare `npx` in `mcp.json` only resolves if Claude Code inherited a shell that had
+run `fnm env`. Both point at `{{HOME}}/.local/share/fnm/aliases/default/bin/npx`
+— the stable default-alias path — and `install.sh` expands `{{HOME}}` the same
+way it expands `{{DOTFILES}}`. `claude-mcp-export` collapses both back into
+placeholders on the way out, so re-exporting never hardcodes a username into
+this repo.
 
 **Graphify is tracked here but deliberately not vouched for.** It is
 OAuth-protected (scope `graphify:query`): nothing reaches the vendor until you
@@ -230,7 +255,7 @@ then record it in `external.json` so the next laptop gets it too.
 | **understand-anything** | Builds a queryable knowledge graph of a codebase, then answers from it: `/understand` maps architecture into layers, `/understand-explain` deep-dives one file or module, `/understand-diff` reads a PR for affected components and risk, `/understand-onboard` writes the guide for someone joining. Aimed at the codebase you have just inherited. |
 | **critical-developer-mindset** | A 7-step pass over any ticket — question, research, validate, expand, secure, future, implement — on the principle that *AC is scope, not specification*. Written for tickets that arrive underspecified. |
 
-### Toolchain — 44 formulae, 7 casks
+### Toolchain — 45 formulae, 7 casks
 
 | Area | Tools |
 |---|---|
@@ -242,7 +267,7 @@ then record it in `external.json` so the next laptop gets it too.
 | **Python** | uv, pyenv, pipx, ruff |
 | **Go** | go, golangci-lint |
 | **Containers** | colima, docker, docker-compose, docker-buildx, lazydocker, dive |
-| **Cloud & IaC** | terraform, tflint, awscli, gcloud |
+| **Cloud & IaC** | terraform, terraform-mcp-server, tflint, awscli, gcloud |
 | **System** | htop, btop, httpie, wget, watch, tldr, coreutils, gnu-sed |
 | **Apps** | iTerm2, VS Code, Slack, MesloLGS + JetBrains Mono Nerd Fonts |
 

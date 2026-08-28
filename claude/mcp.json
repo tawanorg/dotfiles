@@ -30,6 +30,34 @@
       "env": {
         "DOCLING_MCP_CONVERSION_MODE": "local"
       }
+    },
+    "terraform": {
+      "type": "stdio",
+      "command": "terraform-mcp-server",
+      "args": [
+        "stdio"
+      ]
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "{{HOME}}/.local/share/fnm/aliases/default/bin/npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@1.8.0",
+        "--categoryPerformance=false",
+        "--categoryEmulation=false",
+        "--usageStatistics=false",
+        "--screenshotFormat=webp",
+        "--screenshotMaxWidth=1280"
+      ]
+    },
+    "gcloud": {
+      "type": "stdio",
+      "command": "{{HOME}}/.local/share/fnm/aliases/default/bin/npx",
+      "args": [
+        "-y",
+        "@google-cloud/gcloud-mcp"
+      ]
     }
   }
 }

@@ -31,7 +31,26 @@ def has_secret(server):
                for a in server.get("args") or [])
 
 
-kept = {n: s for n, s in live.items() if not has_secret(s)}
+def collapse(value):
+    """Undo install.sh's expansion, so an export stays portable.
+
+    ~/.claude.json holds absolute paths; writing those back would hardcode this
+    machine's username into a repo meant to clone anywhere. DOTFILES is
+    substituted first because it usually lives under HOME.
+    """
+    if isinstance(value, str):
+        for literal, token in ((DOTFILES, "{{DOTFILES}}"),
+                               (os.path.expanduser("~"), "{{HOME}}")):
+            value = value.replace(literal, token)
+        return value
+    if isinstance(value, dict):
+        return {k: collapse(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [collapse(v) for v in value]
+    return value
+
+
+kept = {n: collapse(s) for n, s in live.items() if not has_secret(s)}
 skipped = sorted(set(live) - set(kept))
 
 fd, tmp = tempfile.mkstemp(dir=os.path.dirname(dest))

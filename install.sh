@@ -148,9 +148,15 @@ def save(path, data):
 
 
 def expand(value):
-    """Substitute {{DOTFILES}} so tracked paths work from any clone location."""
+    """Substitute {{DOTFILES}} and {{HOME}} so tracked paths work anywhere.
+
+    {{HOME}} matters for MCP servers launched through a version manager: fnm's
+    `npx` lives on a per-shell ephemeral path, so a bare `npx` only resolves if
+    Claude Code happened to inherit a shell that had run `fnm env`. Pointing at
+    the stable default-alias path instead makes the server start either way.
+    """
     if isinstance(value, str):
-        return value.replace("{{DOTFILES}}", DOTFILES)
+        return value.replace("{{DOTFILES}}", DOTFILES).replace("{{HOME}}", HOME)
     if isinstance(value, dict):
         return {k: expand(v) for k, v in value.items()}
     if isinstance(value, list):
