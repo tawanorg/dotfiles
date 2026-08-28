@@ -29,7 +29,8 @@ Where a tool can return the real answer, never answer from memory:
 | A library or framework's API, config, or migration path | **context7** MCP |
 | A Terraform provider's arguments, a module's docs | **terraform** MCP (Registry) |
 | What a page actually does — console errors, network, layout | **chrome-devtools** MCP |
-| What a PDF, deck, or spreadsheet says | **docling** skill |
+| What a PDF, deck, or spreadsheet says | **docling** skill — reading |
+| Producing a `.xlsx`, `.docx`, `.pptx` or filled PDF | **document-skills** — writing |
 | Where a symbol is defined or used | **serena** MCP |
 
 Training data goes stale and these do not. A confident wrong version number

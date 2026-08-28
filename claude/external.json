@@ -12,7 +12,8 @@
     "mattpocock/skills",
     "phuryn/pm-skills",
     "Egonex-AI/Understand-Anything",
-    "hashicorp/agent-skills"
+    "hashicorp/agent-skills",
+    "anthropics/skills"
   ],
   "plugins": [
     "mattpocock-skills@mattpocock",
@@ -26,6 +27,7 @@
     "pm-market-research@pm-skills",
     "pm-data-analytics@pm-skills",
     "understand-anything@understand-anything",
-    "terraform@hashicorp"
+    "terraform@hashicorp",
+    "document-skills@anthropic-agent-skills"
   ]
 }
