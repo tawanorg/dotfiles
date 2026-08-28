@@ -17,6 +17,19 @@
     "graphify": {
       "type": "http",
       "url": "https://api.graphify.com/mcp"
+    },
+    "docling": {
+      "type": "stdio",
+      "command": "docling-mcp-server",
+      "args": [
+        "conversion",
+        "manipulation",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "DOCLING_MCP_CONVERSION_MODE": "local"
+      }
     }
   }
 }

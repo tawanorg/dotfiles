@@ -123,10 +123,19 @@ claude-mcp-export     # capture this machine's servers into claude/mcp.json
 | **serena** | Semantic code navigation and editing over a real language server — `find_symbol`, `find_referencing_symbols`, `get_symbols_overview`, `get_diagnostics`, symbol-level edits and project-wide rename, across 30+ languages. Navigates by symbol instead of by grep. |
 | **context7** | Version-correct documentation for any library — `resolve-library-id` then `query-docs`. Answers "what does this API actually do in the version I'm on", which a search engine cannot. |
 | **graphify** | Turns a codebase — plus its docs, SQL schemas, configs and PDFs — into a knowledge graph the agent queries and cites instead of grepping. [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify). **Unvetted — see the note below.** |
+| **docling** | Reads PDFs, Word, PowerPoint, Excel and scans locally and offline. Converts a document into an anchored structure the agent navigates — overview, then search, then pull just the passages that matter — instead of pouring a 40-page PDF into the context window. |
 
-`--full` installs Serena's binary with `uv tool install serena-agent`;
-`~/.local/bin` is already on `PATH`, so the bare `serena` command resolves on
-any machine. Context7 needs no key — one only raises rate limits.
+`--full` installs the server binaries with `uv tool install` — `serena-agent`,
+plus `docling` (the batch CLI) and `docling-mcp[local]` (the MCP server, where
+the `local` extra is what keeps conversion on this machine). All three are
+pinned to Python 3.13 because they pull torch, which lags the newest CPython by
+months. `~/.local/bin` is already on `PATH`, so the bare commands resolve on any
+machine. Context7 needs no key — one only raises rate limits.
+
+Docling downloads ~190 MB of layout and OCR models on first use, then runs
+entirely offline. The `/digest` command and the `docling` skill drive it: the
+skill picks between the MCP tools and the CLI, `/digest` batch-converts a file
+or folder into a Markdown corpus with an `INDEX.md` for later sessions.
 
 **Graphify is tracked here but deliberately not vouched for.** It is
 OAuth-protected (scope `graphify:query`): nothing reaches the vendor until you

@@ -189,8 +189,14 @@ if [[ "${1:-}" == "--full" ]]; then
   brew bundle --file="$DOTFILES/Brewfile"
 
   info "Installing uv tools"
-  # Serena's MCP server binary; the server itself is declared in claude/mcp.json.
+  # MCP server binaries; the servers themselves are declared in claude/mcp.json.
+  # Pinned to 3.13: these pull torch, which lags the newest CPython by months.
   uv tool install -p 3.13 serena-agent
+  # docling = the CLI (batch conversion); docling-mcp = the MCP server. The
+  # [local] extra is what makes conversion run on this machine instead of
+  # calling out to a docling-serve instance.
+  uv tool install -p 3.13 docling
+  uv tool install -p 3.13 "docling-mcp[local]"
 
   info "Installing Node LTS"
   eval "$(fnm env --shell bash)" && fnm install --lts && fnm default lts-latest
