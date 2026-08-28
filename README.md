@@ -24,7 +24,7 @@ cd ~/dotfiles && ./install.sh --full
 | **Colours** | Catppuccin Mocha |
 | **Scrollback** | Unlimited |
 | **Keys** | `⌥←/→` by word · `⌘←/→` line ends · `⌥⌫` delete word · `⌘⌫` delete to start |
-| **Status bar** | Enabled, showing trending repos |
+| **Status bar** | Off — trending repos moved to the Claude Code status line |
 | **Behaviour** | No quit prompt, minimal tabs, selection copies, inactive panes dimmed |
 
 The profile is a *dynamic profile* — a JSON file iTerm2 reads on launch. It
@@ -214,12 +214,12 @@ display costs nothing:
 
 | Cache file | Contents | Used by |
 |---|---|---|
-| `.names` | plain `owner/repo` | `claude-statusline` (`sed`, no decoding) |
-| `.groups` | base64 of 5 names joined | iTerm2 user var (`printf` only) |
+| `.names` | plain `owner/repo`, one per line | `claude-statusline` (`sed`, no decoding) |
 
-Both pick their group from the wall clock (`epoch / 1800`), so the display holds
-still for a full 30 minutes and needs no stored state. The zsh `precmd` hook
-spawns no subprocess.
+The status line picks its group of five from the wall clock (`epoch / 1800`), so
+the display holds still for a full 30 minutes and needs no stored state. A
+background refresh runs at most once every 6 hours, from `.zshrc`, detached —
+nothing blocks the prompt.
 
 ```bash
 trending          # page through everything cached

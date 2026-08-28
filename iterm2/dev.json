@@ -248,19 +248,7 @@
         "Color Space": "sRGB"
       },
       "Non Ascii Font": "MesloLGSNFM-Regular 14",
-      "Show Status Bar": true,
-      "Status Bar Layout": {
-        "components": [
-          {
-            "class": "iTermStatusBarSwiftyStringComponent",
-            "configuration": {
-              "knobs": {
-                "expression": "\\(user.trending)"
-              }
-            }
-          }
-        ]
-      }
+      "Show Status Bar": false
     }
   ]
 }
