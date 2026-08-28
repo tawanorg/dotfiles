@@ -186,11 +186,32 @@ entirely offline. The `/digest` command and the `docling` skill drive it: the
 skill picks between the MCP tools and the CLI, `/digest` batch-converts a file
 or folder into a Markdown corpus with an `INDEX.md` for later sessions.
 
-**Every server costs context in every session.** A skill loads a name and a
-description until it is invoked; an MCP server loads *every tool's full JSON
-schema*, always, whether or not the day involves a browser. That is the same
-argument this repo makes for keeping plugins off by default, and it applies
-harder here. Chrome DevTools is the expensive one — 29 tools out of the box,
+**Every server costs context in every session, and it is the biggest line in
+the budget.** A skill loads a name and a description until it is invoked; an
+MCP server loads *every tool's full JSON schema*, always, whether or not the
+day involves a browser. Measured on this machine by listing each server's tools
+and sizing the JSON:
+
+| Server | Tools | Tokens per session |
+|---|---|---|
+| serena | 23 | **6,766** |
+| chrome-devtools | 24 | **5,475** |
+| terraform | 9 | 2,503 |
+| docling | 8 | 2,327 |
+| gcloud | 1 | 544 |
+| **stdio total** | **65** | **~17,615** |
+
+context7 and graphify are HTTP and not counted. For scale: that total is 12x
+this repo's `CLAUDE.md` and 4x what disabling the PM plugins saves. It is also
+**1.8% of a 1M context**, which is a fair price for seven servers — the point
+of writing it down is that every other context argument in this file concerns
+numbers an order of magnitude smaller. Tune here first, or knowingly decide not
+to.
+
+serena is the one to watch: the largest single line, and the easiest to keep
+out of habit rather than use. If a month passes without reaching for symbol
+navigation, dropping it recovers more than every skill decision in this file
+combined. Chrome DevTools is the expensive one — 29 tools out of the box,
 trimmed to 24 by `--categoryPerformance=false --categoryEmulation=false`, which
 drops Lighthouse, tracing and heap snapshots. Screenshots are forced to WebP at
 1280px wide because PNG screenshots are enormous in context, and usage
@@ -229,7 +250,16 @@ Then commit. On the next laptop, `./install.sh` puts them back.
 `enabledPlugins` explicitly: the developer plugins on, the nine `pm-skills`
 ones `false`. Every installed skill's name and description loads into *every*
 session before you type anything — the PM set alone is 68 skills, ~4.4k tokens
-of context in repos where it is never used. Installed and one flag from ready beats loaded
+of context in repos where it is never used. Measured, `mattpocock` is 37 skills
+for ~1,461 tokens.
+
+[addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) was
+weighed against it and rejected on that measurement: 24 skills for ~1,892
+tokens of descriptions **plus a mandatory SessionStart hook that injects
+~2,585 more**, for ~4,477 a session — three times the cost for a third fewer
+skills, with no way to decline the hook short of forking. It is the better
+repo in isolation, and the wrong trade against a set already installed and
+already routed. Installed and one flag from ready beats loaded
 and idle. A project that wants them turns them on in its own
 `.claude/settings.json`, which outranks user scope.
 
