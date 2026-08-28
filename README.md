@@ -147,6 +147,18 @@ you want the graph without the vendor, the repo is Apache-2.0: run it yourself.
 
 Then commit. On the next laptop, `./install.sh` puts them back.
 
+**Plugins are tracked off by default.** `claude/settings.json` pins
+`enabledPlugins` explicitly: the developer plugins on, the nine `pm-skills`
+ones `false`. All 114 skills' names and descriptions load into *every* session
+before you type anything — the PM set alone costs ~4.4k tokens of context in
+repos where it is never used. Installed and one flag from ready beats loaded
+and idle. A project that wants them turns them on in its own
+`.claude/settings.json`, which outranks user scope.
+
+Because `install.sh` replaces whole top-level keys, this file is the source of
+truth: enabling a plugin through `/plugin` will be reset on the next install
+unless you record it here too.
+
 **Secrets never enter this repo.** `claude-mcp-export` skips any server with a
 literal value under a key like `token`, `api_key` or `password`, and tells you
 which. Two ways to keep those working:

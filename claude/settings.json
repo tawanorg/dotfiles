@@ -7,5 +7,18 @@
     "type": "command",
     "command": "{{DOTFILES}}/bin/claude-statusline",
     "padding": 0
+  },
+  "enabledPlugins": {
+    "mattpocock-skills@mattpocock": true,
+    "understand-anything@understand-anything": true,
+    "pm-product-discovery@pm-skills": false,
+    "pm-product-strategy@pm-skills": false,
+    "pm-execution@pm-skills": false,
+    "pm-market-research@pm-skills": false,
+    "pm-data-analytics@pm-skills": false,
+    "pm-go-to-market@pm-skills": false,
+    "pm-marketing-growth@pm-skills": false,
+    "pm-toolkit@pm-skills": false,
+    "pm-ai-shipping@pm-skills": false
   }
 }
