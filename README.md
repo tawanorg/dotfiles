@@ -122,10 +122,28 @@ claude-mcp-export     # capture this machine's servers into claude/mcp.json
 |---|---|
 | **serena** | Semantic code navigation and editing over a real language server — `find_symbol`, `find_referencing_symbols`, `get_symbols_overview`, `get_diagnostics`, symbol-level edits and project-wide rename, across 30+ languages. Navigates by symbol instead of by grep. |
 | **context7** | Version-correct documentation for any library — `resolve-library-id` then `query-docs`. Answers "what does this API actually do in the version I'm on", which a search engine cannot. |
+| **graphify** | Turns a codebase — plus its docs, SQL schemas, configs and PDFs — into a knowledge graph the agent queries and cites instead of grepping. [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify). **Unvetted — see the note below.** |
 
 `--full` installs Serena's binary with `uv tool install serena-agent`;
 `~/.local/bin` is already on `PATH`, so the bare `serena` command resolves on
 any machine. Context7 needs no key — one only raises rate limits.
+
+**Graphify is tracked here but deliberately not vouched for.** It is
+OAuth-protected (scope `graphify:query`): nothing reaches the vendor until you
+run `/mcp` and sign in, and the token lives in Claude Code's credential store,
+so `claude/mcp.json` carries no secret. Before you do sign in, note what the
+public numbers say:
+
+- 111.7k stars against **369 watchers** — a 303:1 ratio, where healthy popular
+  repos sit near 20:1–60:1. Stars can be bought; watchers are much harder to fake.
+- The repo is ~5 months old (created 2026-04-03) and the `Graphify-Labs` org is
+  younger still (2026-06-28), so the repo predates the org that now owns it.
+- The pitch says "on-device", yet this MCP endpoint is a hosted API at
+  `api.graphify.com` that your codebase queries travel to.
+
+None of that is proof of anything, but it is the profile of a project marketing
+harder than it has earned — and the access it asks for is your source code. If
+you want the graph without the vendor, the repo is Apache-2.0: run it yourself.
 
 Then commit. On the next laptop, `./install.sh` puts them back.
 
