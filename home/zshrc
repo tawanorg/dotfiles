@@ -181,36 +181,16 @@ gclone() { git clone "$1" && cd "$(basename "$1" .git)"; }
 
 # f — fuzzy-find a file and open it in the editor
 f() { local file; file=$(fzf --preview 'bat --color=always {}') && $EDITOR "$file"; }
-
-# ── iTerm2 status bar: trending GitHub repos ──────────────────────────────
-# gh-trending precomputes groups of 5 repo names, already base64-encoded for
-# SetUserVar. This hook runs on every prompt, so it only does arithmetic and a
-# printf — no subprocess, no decoding.
-if [[ $TERM_PROGRAM == iTerm.app ]]; then
-  zmodload -F zsh/datetime p:EPOCHSECONDS
-  typeset -ga _gh_trending_groups
-  _gh_trending_cache=~/.cache/gh-trending.groups
-
-  [[ -r $_gh_trending_cache ]] && _gh_trending_groups=("${(@f)$(<$_gh_trending_cache)}")
-
-  # Refresh once per shell, in the background, if the cache is missing or >6h old.
-  if [[ ! -f $_gh_trending_cache || -n $_gh_trending_cache(#qN.mh+6) ]]; then
-    (gh-trending --refresh >/dev/null 2>&1 &) 2>/dev/null
-  fi
-
-  _gh_trending_precmd() {
-    (( $#_gh_trending_groups )) || return
-    # Keyed off the wall clock: the same group shows for a whole 30 minutes,
-    # so the bar holds still instead of changing on every prompt.
-    local i=$(( (EPOCHSECONDS / 1800) % $#_gh_trending_groups + 1 ))
-    printf '\e]1337;SetUserVar=trending=%s\a' "$_gh_trending_groups[i]"
-  }
-  autoload -Uz add-zsh-hook
-  add-zsh-hook precmd _gh_trending_precmd
-
-  alias trending='gh-trending --list | less -R'
-  alias trending-open='open "$(gh-trending --url)"'
+# ── Trending GitHub repos: keep the cache warm ────────────────────────────
+# gh-trending writes ~/.cache/gh-trending.names, which claude-statusline reads
+# on every refresh. Nothing renders the repos in the shell any more — the
+# iTerm2 SetUserVar hook is gone — but the cache still needs refreshing.
+_gh_trending_cache=~/.cache/gh-trending.names
+if [[ ! -f $_gh_trending_cache || -n $_gh_trending_cache(#qN.mh+6) ]]; then
+  (gh-trending --refresh >/dev/null 2>&1 &) 2>/dev/null
 fi
 
+alias trending='gh-trending --list | less -R'
+alias trending-open='open "$(gh-trending --url)"'
 # ── Local overrides (machine-specific, not committed anywhere) ────────────
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
