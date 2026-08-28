@@ -100,13 +100,24 @@ further wiring: write `claude/commands/review.md`, and `/review` works at once.
 ```
 claude/
 ├── commands/
-│   └── review.md          ->  /review
+│   └── digest.md                    ->  /digest
 ├── skills/
-│   └── deploy/
-│       └── SKILL.md       ->  the "deploy" skill
-└── agents/
-    └── triage.md          ->  the "triage" subagent
+│   ├── docling/
+│   │   └── SKILL.md                 ->  the "docling" skill
+│   └── critical-developer-mindset/  ->  cloned, not vendored (see below)
+└── agents/                          ->  empty: drop triage.md here, get "triage"
 ```
+
+**What this repo teaches the agent today.** Two of these are authored here; the
+rest arrive as plugins or clones, covered further down.
+
+| Capability | Kind | What it does |
+|---|---|---|
+| `/digest <file-or-folder> [out]` | command | Batch-converts PDFs, Word, PowerPoint and Excel into a Markdown corpus, writes an `INDEX.md` so later sessions read one summary instead of opening every file, and gitignores the output as a derived artifact. |
+| **docling** | skill | Fires whenever a document is in play. Chooses between the MCP tools and the CLI, and enforces the rule that keeps this usable: navigate a document by anchor, never pour a 40-page PDF into the context window. Also covers the OCR cost trap — `--no-ocr` is a large speedup on digital PDFs. |
+
+`claude/agents/` is scaffolded but empty — the symlink is live, so the first
+`.md` you drop in becomes a subagent with no further wiring.
 
 **MCP servers** can't be symlinked — they live in `~/.claude.json`, a state file
 Claude Code rewrites constantly. So `claude/mcp.json` holds the definitions and
@@ -216,9 +227,10 @@ then record it in `external.json` so the next laptop gets it too.
 |---|---|
 | **mattpocock-skills** | 25 skills for underspecified work: `grilling` interrogates a plan in rounds before you build, `to-spec` and `to-tickets` turn a conversation into something actionable, `triage` writes agent-ready briefs. |
 | **pm-skills** (9 plugins) | The consulting side of a one-person business: NDAs and privacy policies, pricing and value-prop, ICP and go-to-market, plus `pm-ai-shipping` for auditing AI-written code (`intended-vs-implemented`, `ship-check`). |
+| **understand-anything** | Builds a queryable knowledge graph of a codebase, then answers from it: `/understand` maps architecture into layers, `/understand-explain` deep-dives one file or module, `/understand-diff` reads a PR for affected components and risk, `/understand-onboard` writes the guide for someone joining. Aimed at the codebase you have just inherited. |
 | **critical-developer-mindset** | A 7-step pass over any ticket — question, research, validate, expand, secure, future, implement — on the principle that *AC is scope, not specification*. Written for tickets that arrive underspecified. |
 
-### Toolchain — 44 formulae, 6 casks
+### Toolchain — 44 formulae, 7 casks
 
 | Area | Tools |
 |---|---|
@@ -232,7 +244,7 @@ then record it in `external.json` so the next laptop gets it too.
 | **Containers** | colima, docker, docker-compose, docker-buildx, lazydocker, dive |
 | **Cloud & IaC** | terraform, tflint, awscli, gcloud |
 | **System** | htop, btop, httpie, wget, watch, tldr, coreutils, gnu-sed |
-| **Apps** | iTerm2, Slack, MesloLGS + JetBrains Mono Nerd Fonts |
+| **Apps** | iTerm2, VS Code, Slack, MesloLGS + JetBrains Mono Nerd Fonts |
 
 Git comes configured with delta diffs, `pull --rebase`, `push` auto-setting
 upstream, `rerere`, and aliases (`git s`, `git lg`, `git sync`, `git cleanup`).
@@ -253,7 +265,8 @@ display costs nothing:
 
 | Cache file | Contents | Used by |
 |---|---|---|
-| `.names` | plain `owner/repo`, one per line | `claude-statusline` (`sed`, no decoding) |
+| `~/.cache/gh-trending.json` | full records — name, URL, stars, the query that found it | `trending`, `trending-open` |
+| `~/.cache/gh-trending.names` | plain `owner/repo`, one per line | `claude-statusline` (`sed`, no decoding) |
 
 The status line picks its group of five from the wall clock (`epoch / 1800`), so
 the display holds still for a full 30 minutes and needs no stored state. A
