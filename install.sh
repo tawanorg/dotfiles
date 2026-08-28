@@ -61,6 +61,60 @@ if [[ -e "$DOTFILES/claude/CLAUDE.md" ]]; then
   link "$DOTFILES/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 fi
 
+# Skills that live in their own repo stay a live checkout (gitignored here), so
+# you can edit and push them without bumping a pointer in this repo.
+if command -v python3 >/dev/null; then
+  while IFS=$'\t' read -r name url; do
+    [[ -n $name ]] || continue
+    dest="$DOTFILES/claude/skills/$name"
+    if [[ -d $dest/.git ]]; then
+      git -C "$dest" pull --ff-only --quiet 2>/dev/null \
+        && printf '    pull %s\n' "$name" \
+        || warn "could not update $name (local changes?) - left alone"
+    else
+      info "Cloning skill $name"
+      git clone --quiet "$url" "$dest" || warn "clone failed: $url"
+    fi
+  done < <(python3 -c '
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except FileNotFoundError:
+    raise SystemExit
+for name, url in (d.get("skills") or {}).items():
+    print(f"{name}\t{url}")
+' "$DOTFILES/claude/external.json")
+fi
+
+# Marketplaces and plugins go through the CLI, which owns their on-disk state.
+if command -v claude >/dev/null && command -v python3 >/dev/null; then
+  reg() { python3 -c '
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except FileNotFoundError:
+    raise SystemExit
+print("\n".join(d.get(sys.argv[2]) or []))
+' "$DOTFILES/claude/external.json" "$1"; }
+
+  while read -r src; do
+    [[ -n $src ]] || continue
+    claude plugin marketplace add "$src" >/dev/null 2>&1 \
+      && printf '    marketplace %s\n' "$src" \
+      || printf '    ok   marketplace %s\n' "$src"
+  done < <(reg marketplaces)
+
+  while read -r plugin; do
+    [[ -n $plugin ]] || continue
+    if claude plugin list 2>/dev/null | grep -q "${plugin%%@*}"; then
+      printf '    ok   plugin %s\n' "$plugin"
+    else
+      info "Installing plugin $plugin"
+      claude plugin install "$plugin" -y --scope user || warn "install failed: $plugin"
+    fi
+  done < <(reg plugins)
+fi
+
 # Claude Code rewrites ~/.claude/settings.json and ~/.claude.json itself, so
 # neither can be symlinked. Merge our keys in, leaving everything else alone.
 if command -v python3 >/dev/null; then

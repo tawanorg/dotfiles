@@ -132,6 +132,42 @@ which. Two ways to keep those working:
 Connectors you authorise on claude.ai — Gmail, Drive, Atlassian — are tied to
 your account, not this machine, so they follow you without any config here.
 
+### Skills and plugins that live elsewhere
+
+`claude/external.json` lists what to fetch rather than vendor, so a skill you
+maintain in its own repo stays a **live checkout** — edit it under
+`claude/skills/<name>/` and push from there, with no pointer to bump here.
+`install.sh` clones each one, then `pull --ff-only`s it on later runs and leaves
+it alone if you have local changes. They're gitignored, so this repo never holds
+a second copy.
+
+```json
+{
+  "skills": {
+    "critical-developer-mindset": "https://github.com/tawanorg/critical-thinking.git"
+  },
+  "marketplaces": ["anthropics/claude-plugins-official"],
+  "plugins": []
+}
+```
+
+Adding one takes two edits: the entry above, and a matching `.gitignore` line.
+
+**Plugins** are registered through the `claude` CLI, which owns their on-disk
+state — `install.sh` adds each marketplace and installs any plugin not already
+present. To add one:
+
+```bash
+claude plugin marketplace add owner/repo
+claude plugin install name@marketplace
+```
+
+then record it in `external.json` so the next laptop gets it too.
+
+| Skill | What it does |
+|---|---|
+| **critical-developer-mindset** | A 7-step pass over any ticket — question, research, validate, expand, secure, future, implement — on the principle that *AC is scope, not specification*. Written for tickets that arrive underspecified. |
+
 ### Toolchain — 44 formulae, 6 casks
 
 | Area | Tools |
@@ -235,6 +271,7 @@ Then open a **new iTerm2 window** to pick up the Dev profile.
 | `iterm2/dev.json` | iTerm2 DynamicProfiles |
 | `claude/skills`, `claude/commands`, `claude/agents` | `~/.claude/` — Claude Code skills, slash commands, subagents |
 | `claude/settings.json`, `claude/mcp.json` | merged into `~/.claude/settings.json` and `~/.claude.json` |
+| `claude/external.json` | skills cloned from their own repos; marketplaces and plugins |
 | `bin/*` | on `PATH` via `.zshrc` |
 | `macos/defaults.sh` | system settings (not linked — run by `--full`) |
 | `Brewfile` | every formula and cask |

@@ -1,0 +1,13 @@
+{
+  "_comment": "Skills and plugins that live in their own repos. install.sh clones or updates each one; they are gitignored here so they stay a live checkout you can edit and push from directly.",
+
+  "skills": {
+    "critical-developer-mindset": "https://github.com/tawanorg/critical-thinking.git"
+  },
+
+  "marketplaces": [
+    "anthropics/claude-plugins-official"
+  ],
+
+  "plugins": []
+}
