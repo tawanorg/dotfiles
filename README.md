@@ -143,7 +143,12 @@ would not decide: which of the three Terraform sources to use, serena versus
 and a standing rule to prefer a tool that returns ground truth over recalling
 an API from training data.
 
-It costs ~800 tokens in *every* session, including repos with no Terraform in
+It also sets one house style: **length has to earn itself** — answer first,
+cut words but never facts. That is the free 90% of what prompt-compression
+tooling sells, applied where the tradeoff is still yours to control, with no
+proxy in front of the model rewriting these rules before it reads them.
+
+It costs ~1.1k tokens in *every* session, including repos with no Terraform in
 them, which is the reason it stays route-only. A rule that needs a paragraph
 belongs in a skill, where it loads only when it is relevant.
 

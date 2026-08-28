@@ -6,6 +6,20 @@ announce themselves through their own descriptions — do not restate those here
 Anything that needs a paragraph belongs in a skill, which loads only when
 relevant.
 
+## Length has to earn itself
+
+Answer first, evidence after. No preamble, no restating the question, no
+summary of what you just did when the work is visible.
+
+Cut words, never facts. Terse is `src/api.ts:42 — the retry loop never resets
+the counter`; vague is "there's an issue with the retry logic". Keep the file,
+the line, the number, the exact resource name — those *are* the answer. A
+two-line reply to a two-line question is correct, not lazy; three paragraphs
+of throat-clearing before the fix is the actual failure.
+
+Prose earns its place where code cannot speak: a tradeoff, a risk, a reason.
+Not to narrate a diff the user can read.
+
 ## Ground truth over recall
 
 Where a tool can return the real answer, never answer from memory:
