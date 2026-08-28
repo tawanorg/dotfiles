@@ -118,12 +118,14 @@ claude mcp add serena -s user -- serena start-mcp-server --context ide-assistant
 claude-mcp-export     # capture this machine's servers into claude/mcp.json
 ```
 
-Currently one server: **serena** — semantic code retrieval and editing over a
-real language server, so the agent navigates by symbol rather than by grep.
-`find_symbol`, `find_referencing_symbols`, `get_symbols_overview`,
-`get_diagnostics`, and symbol-level edits, across 30+ languages. `--full`
-installs its binary with `uv tool install serena-agent`; `~/.local/bin` is
-already on `PATH`, so the bare `serena` command resolves on any machine.
+| Server | What it gives the agent |
+|---|---|
+| **serena** | Semantic code navigation and editing over a real language server — `find_symbol`, `find_referencing_symbols`, `get_symbols_overview`, `get_diagnostics`, symbol-level edits and project-wide rename, across 30+ languages. Navigates by symbol instead of by grep. |
+| **context7** | Version-correct documentation for any library — `resolve-library-id` then `query-docs`. Answers "what does this API actually do in the version I'm on", which a search engine cannot. |
+
+`--full` installs Serena's binary with `uv tool install serena-agent`;
+`~/.local/bin` is already on `PATH`, so the bare `serena` command resolves on
+any machine. Context7 needs no key — one only raises rate limits.
 
 Then commit. On the next laptop, `./install.sh` puts them back.
 

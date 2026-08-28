@@ -34,6 +34,11 @@
 	autoSetupRemote = true   # `git push` on a new branch just works
 	followTags = true
 
+# Clone GitHub over HTTPS (works before SSH keys exist on a fresh machine),
+# but always push over SSH, so pushing never prompts for a password.
+[url "git@github.com:"]
+	pushInsteadOf = https://github.com/
+
 [fetch]
 	prune = true             # drop local refs for deleted remote branches
 
