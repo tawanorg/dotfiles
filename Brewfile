@@ -97,5 +97,7 @@ cask "gcloud-cli"
 cask "iterm2"
 # Team communication and collaboration software
 cask "slack"
+# Open-source code editor
+cask "visual-studio-code"
 # Pluggable Terraform linter
 cask "terraform-linters/tap/tflint", trusted: true
