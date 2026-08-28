@@ -92,7 +92,7 @@ with the same slash commands and skills as the old one.
 | `claude/skills/` | `~/.claude/skills` | One folder per skill, each with a `SKILL.md` |
 | `claude/commands/` | `~/.claude/commands` | One `.md` per slash command — `foo.md` is `/foo` |
 | `claude/agents/` | `~/.claude/agents` | One `.md` per subagent |
-| `claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Global instructions — linked only if you create it |
+| `claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Global instructions — routing rules, loaded every session |
 
 These are **directory** symlinks, so anything you add later is tracked with no
 further wiring: write `claude/commands/review.md`, and `/review` works at once.
@@ -118,6 +118,19 @@ rest arrive as plugins or clones, covered further down.
 
 `claude/agents/` is scaffolded but empty — the symlink is live, so the first
 `.md` you drop in becomes a subagent with no further wiring.
+
+**`claude/CLAUDE.md` routes between overlapping tools.** A skill announces
+itself through its own `description`, which is what makes it fire without being
+asked — so this file deliberately does not restate them. It covers only the
+cases where two or more tools could plausibly answer and the description alone
+would not decide: which of the three Terraform sources to use, serena versus
+`/understand` versus a broad sweep, `/code-review` versus the Matt Pocock one,
+and a standing rule to prefer a tool that returns ground truth over recalling
+an API from training data.
+
+It costs ~800 tokens in *every* session, including repos with no Terraform in
+them, which is the reason it stays route-only. A rule that needs a paragraph
+belongs in a skill, where it loads only when it is relevant.
 
 **MCP servers** can't be symlinked — they live in `~/.claude.json`, a state file
 Claude Code rewrites constantly. So `claude/mcp.json` holds the definitions and
