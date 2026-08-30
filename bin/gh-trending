@@ -1,12 +1,23 @@
 #!/usr/bin/env python3
-"""Fetch interesting self-hosted / AI / dev-tooling repos from GitHub and
-rotate through them one at a time, for display in a status bar.
+"""Fetch self-hosted software you could run internally or resell as a service,
+and rotate through it for display in a status bar.
 
   gh-trending --refresh   force a fetch
   gh-trending --next      print the next repo (refreshes in background if stale)
-  gh-trending --list      print everything cached
+  gh-trending --list      print everything cached, with licence
+
+Two filters do all the work here:
+
+  * licence — permissive only (MIT / Apache-2.0 / BSD / MPL-2.0). AGPL, SSPL
+    and the "sustainable use"/BUSL family are excluded on purpose: they are
+    fine to self-host, but they are exactly the licences that make reselling
+    the software as a hosted service either impossible or an obligation to
+    publish your own changes. If you only ever run it internally, drop
+    PERMISSIVE and the pool roughly triples.
+  * topic — AI is filtered out rather than sought. GitHub's trending surface
+    is saturated with it and it drowns everything shippable.
 """
-import json, os, sys, time, urllib.request, urllib.error, urllib.parse, subprocess, random
+import json, os, re, sys, time, urllib.request, urllib.error, urllib.parse, subprocess, random
 
 CACHE = os.path.expanduser("~/.cache/gh-trending.json")
 NAMES  = os.path.expanduser("~/.cache/gh-trending.names")
@@ -16,16 +27,70 @@ API = "https://api.github.com/search/repositories"
 def _days_ago(n):
     return time.strftime("%Y-%m-%d", time.gmtime(time.time() - n * 86400))
 
-# Each query is (label, search string). Mixing "new and rising" with
-# "established but actively pushed" keeps the rotation from going stale.
-QUERIES = [
-    ("self-hosted", f"topic:self-hosted stars:>300 pushed:>{_days_ago(60)}"),
-    ("self-hosted", f"topic:self-hosted stars:>50 created:>{_days_ago(365)}"),
-    ("ai",          f"topic:llm stars:>500 pushed:>{_days_ago(30)}"),
-    ("ai",          f"topic:ai-agents stars:>100 created:>{_days_ago(270)}"),
-    ("mcp",         f"topic:mcp stars:>100 pushed:>{_days_ago(60)}"),
-    ("devtools",    f"topic:developer-tools stars:>800 pushed:>{_days_ago(30)}"),
+# Repeated `license:` qualifiers OR together; repeated `topic:` qualifiers AND.
+# That asymmetry is why licences are one string and categories are one per query.
+PERMISSIVE = "license:mit license:apache-2.0 license:bsd-3-clause license:bsd-2-clause license:mpl-2.0"
+NO_AI = ("-topic:llm -topic:ai -topic:artificial-intelligence -topic:machine-learning "
+         "-topic:ai-agents -topic:agents -topic:rag -topic:chatgpt -topic:mcp "
+         "-topic:deep-learning -topic:generative-ai")
+
+# Product categories that map onto something you could actually charge for.
+# Counts in the comments are the size of the permissive, non-AI pool as measured
+# on 2026-08-28 — a topic yielding single digits is not worth a query slot.
+CATEGORIES = [
+    "monitoring",       # 308
+    "analytics",        # 164
+    "observability",    # 167
+    "cms",              # 125
+    "ecommerce",        # 74
+    "low-code",         # 62
+    "project-management",
+    "crm",
+    "scheduling",
+    "headless-cms",
+    "business-intelligence",
+    "no-code",
+    "erp",
+    "billing",
+    "kanban",
+    "survey",
+    "status-page",
+    "workflow-automation",
+    "knowledge-base",
+    "identity-provider",
+    "file-sharing",
+    "helpdesk",
+    "internal-tools",
+    "newsletter",
 ]
+
+# Descriptions give away the AI repos that never bothered to tag themselves.
+AI_WORDS = re.compile(
+    r"\b(ai|llm|llms|gpt|chatgpt|claude|gemini|rag|agentic|copilot|prompt|prompts"
+    r"|embeddings?|inference|fine-?tun\w*|transformers?|mcp)\b", re.I)
+
+# The category topics are also where dev libraries live: searching `forms` or
+# `analytics` returns as many validation helpers and React wrappers as it does
+# products. Nothing here is a thing you can stand up and charge someone for.
+NOT_A_PRODUCT = re.compile(
+    r"\b(librar(y|ies)|framework|hooks?|components?|sdk|bindings?|wrapper"
+    r"|boilerplate|starter|template|awesome|cheat ?sheet|tutorials?|courses?"
+    r"|roadmap|examples?|list of|collection of|curated)\b", re.I)
+
+def _queries():
+    """Two broad sweeps every time, plus a rotating sample of categories.
+
+    Sampling keeps the API cost flat (search allows 30 req/min) while still
+    turning the pool over between refreshes, so the status bar is not showing
+    the same eight repos for a week.
+    """
+    qs = [
+        ("self-hosted", f"topic:self-hosted stars:>300 pushed:>{_days_ago(60)} {PERMISSIVE} {NO_AI}"),
+        ("self-hosted", f"topic:self-hosted stars:>50 created:>{_days_ago(365)} {PERMISSIVE} {NO_AI}"),
+    ]
+    for topic in random.sample(CATEGORIES, 8):
+        qs.append((topic, f"topic:{topic} stars:>150 pushed:>{_days_ago(120)} {PERMISSIVE} {NO_AI}"))
+    return qs
 
 def _token():
     """Use the gh CLI's token when it's logged in — 5000 req/hr instead of 10/min."""
@@ -57,7 +122,7 @@ def _search(q, token):
 
 def refresh():
     token, repos, seen = _token(), [], set()
-    for label, q in QUERIES:
+    for label, q in _queries():
         try:
             items = _search(q, token)
         except urllib.error.HTTPError as e:
@@ -70,13 +135,21 @@ def refresh():
             name = it["full_name"]
             if name in seen or it.get("archived") or it.get("fork"):
                 continue
+            desc = _clean(it.get("description"))
+            if not desc:
+                continue                  # nothing to judge it on
+            if AI_WORDS.search(desc) or AI_WORDS.search(name):
+                continue                  # untagged AI repo — the topic filter missed it
+            if NOT_A_PRODUCT.search(desc):
+                continue
             seen.add(name)
             repos.append({
                 "name": name,
                 "stars": it["stargazers_count"],
-                "desc": _clean(it.get("description")),
+                "desc": desc,
                 "url": it["html_url"],
                 "topic": label,
+                "license": (it.get("license") or {}).get("spdx_id") or "?",
             })
         if not token:
             time.sleep(2)                 # unauthenticated search allows 10/min
@@ -129,9 +202,10 @@ def _fmt_full(r):
     """Verbose form for `trending`, which pages through the list."""
     stars = f"{r['stars']/1000:.1f}k" if r["stars"] >= 1000 else str(r["stars"])
     desc = r["desc"]
-    if len(desc) > 62:
-        desc = desc[:61].rstrip() + "…"
-    return f"★{stars:>7} {r['name']}" + (f" — {desc}" if desc else "")
+    if len(desc) > 58:
+        desc = desc[:57].rstrip() + "…"
+    lic = (r.get("license") or "?").replace("Apache-2.0", "Apache2")
+    return f"★{stars:>7}  {lic:<11} {r['name']}" + (f" — {desc}" if desc else "")
 
 def main():
     arg = sys.argv[1] if len(sys.argv) > 1 else "--next"
