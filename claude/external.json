@@ -2,6 +2,10 @@
   "_comment": "Skills and plugins that live in their own repos. install.sh clones or updates each one; they are gitignored here so they stay a live checkout you can edit and push from directly.",
   "skills": {
     "critical-developer-mindset": "https://github.com/tawanorg/critical-thinking.git",
+    "mastra": {
+      "url": "https://github.com/mastra-ai/skills.git",
+      "path": "skills/mastra"
+    },
     "terraform-skill": {
       "url": "https://github.com/antonbabenko/terraform-skill.git",
       "path": "skills/terraform-skill"
@@ -29,5 +33,76 @@
     "understand-anything@understand-anything",
     "terraform@hashicorp",
     "document-skills@anthropic-agent-skills"
-  ]
+  ],
+  "shared_skills": {
+    "firecrawl/skills": [
+      "firecrawl",
+      "firecrawl-agent",
+      "firecrawl-company-directories",
+      "firecrawl-competitive-intel",
+      "firecrawl-crawl",
+      "firecrawl-dashboard-reporting",
+      "firecrawl-deep-research",
+      "firecrawl-demo-walkthrough",
+      "firecrawl-developer-index",
+      "firecrawl-download",
+      "firecrawl-interact",
+      "firecrawl-knowledge-base",
+      "firecrawl-knowledge-ingest",
+      "firecrawl-lead-gen",
+      "firecrawl-lead-research",
+      "firecrawl-map",
+      "firecrawl-market-research",
+      "firecrawl-monitor",
+      "firecrawl-parse",
+      "firecrawl-qa",
+      "firecrawl-research-index",
+      "firecrawl-research-papers",
+      "firecrawl-scrape",
+      "firecrawl-search",
+      "firecrawl-seo-audit",
+      "firecrawl-shop",
+      "firecrawl-website-design-clone",
+      "firecrawl-workflows"
+    ],
+    "software-mansion/argent": [
+      "argent-android-emulator-setup",
+      "argent-create-flow",
+      "argent-device-interact",
+      "argent-ios-device-interact",
+      "argent-ios-device-setup",
+      "argent-ios-simulator-setup",
+      "argent-lens",
+      "argent-metro-debugger",
+      "argent-native-profiler",
+      "argent-qa-flows",
+      "argent-react-native-app-workflow",
+      "argent-react-native-optimization",
+      "argent-react-native-profiler",
+      "argent-screen-recording",
+      "argent-screenshot-diff",
+      "argent-settings-permissions",
+      "argent-test-ui-flow",
+      "argent-tv-interact"
+    ],
+    "copilotkit/CopilotKit": [
+      "a2ui-renderer",
+      "channels-setup",
+      "copilotkit-agui",
+      "copilotkit-channels",
+      "copilotkit-contribute",
+      "copilotkit-debug",
+      "copilotkit-develop",
+      "copilotkit-integrations",
+      "copilotkit-self-update",
+      "copilotkit-setup",
+      "copilotkit-upgrade",
+      "inspector-docs",
+      "inspector-workbench",
+      "intelligence-docs",
+      "react-core",
+      "runtime",
+      "setup-slack-channel"
+    ]
+  }
 }

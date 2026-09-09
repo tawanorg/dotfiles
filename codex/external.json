@@ -1,0 +1,10 @@
+{
+  "local_skills": ["worktree", "worktree-cleanup", "ics-jira-dev-ready"],
+  "removed_mcp_servers": ["graphify"],
+  "install_commands": [
+    ["npx", "-y", "skills", "add", "openai/skills", "--skill", "yeet", "gh-fix-ci", "--agent", "codex", "-y", "-g"],
+    ["npx", "-y", "skills", "add", "mattpocock/skills", "--skill", "handoff", "--agent", "codex", "-y", "-g"],
+    ["npx", "-y", "firecrawl-cli@1.23.3", "init", "--global", "--yes", "--agent", "codex", "--skip-auth"],
+    ["npx", "-y", "firecrawl-cli@1.23.3", "setup", "defaults", "--agent", "codex"]
+  ]
+}

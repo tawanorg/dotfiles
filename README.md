@@ -413,6 +413,45 @@ aws configure && gcloud init              # if you use them
 
 Then open a **new iTerm2 window** to pick up the Dev profile.
 
+### Codex
+
+Shared Claude skills from Firecrawl, Argent and CopilotKit are listed in
+`claude/external.json`. `./install.sh --full` installs those upstream sources;
+ordinary `./install.sh` repairs links to skills already in `~/.agents/skills`.
+The generated links are ignored by Git, so another machine gets its own paths.
+
+`codex-sync export` captures this user's model and web-search settings, status
+line, developer instructions, app preferences, portable notifications/hooks,
+MCP servers, Git marketplace/plugin preferences, global instructions and custom
+agents. It also saves the local `worktree`, `worktree-cleanup` and
+`ics-jira-dev-ready` skills. Run it after changing Codex settings, then review
+the diff. Home paths in configuration are stored as `{{HOME}}`; unrecognised
+top-level settings are reported for review instead of silently omitted.
+
+`./install.sh` restores that snapshot into `~/.codex`, merging settings while
+preserving project trust and app-managed entries. Changed files are backed up
+under `~/.codex/dotfiles-backups/`. Existing comments in `config.toml` survive
+in that backup; the merged TOML is rewritten. Graphify is explicitly retired.
+
+`codex-sync install --external` also installs `yeet`, `gh-fix-ci`, Matt Pocock's
+`handoff`, and Firecrawl's skills for Codex at user scope. `./install.sh --full`
+runs this after setting up Node. Sources and commands live in
+`codex/external.json`; Firecrawl is pinned to the installed CLI version.
+Firecrawl is the default web provider (`web_search = "disabled"`), and its
+OAuth MCP endpoint is included. On a new machine, run
+`firecrawl login --browser` and `codex mcp login firecrawl` to authenticate
+the CLI and MCP separately.
+
+Codex credentials, sessions, approval rules, project paths, hook trust hashes,
+and app-managed runtime/plugin files and notification commands stay local.
+The TUI's model onboarding state stays local too. MCP definitions containing
+potential credentials are skipped on export; review every exported diff.
+Codex's desktop app restores its bundled tools. The external Git marketplace
+configuration is tracked; plugin caches are not copied. Shared skills under
+`~/.agents/skills` remain owned by their upstream installers.
+
+Requires Python 3.11+ (`tomllib`).
+
 ## Not included, on purpose
 
 - **Docker Desktop** — its installer needs a sudo password, so this uses
@@ -437,6 +476,7 @@ Then open a **new iTerm2 window** to pick up the Dev profile.
 | `claude/skills`, `claude/commands`, `claude/agents` | `~/.claude/` — Claude Code skills, slash commands, subagents |
 | `claude/settings.json`, `claude/mcp.json` | merged into `~/.claude/settings.json` and `~/.claude.json` |
 | `claude/external.json` | skills cloned from their own repos; marketplaces and plugins |
+| `codex/` | Codex settings snapshot, instructions, custom agents, local skills and external skill installers |
 | `bin/*` | on `PATH` via `.zshrc` |
 | `macos/defaults.sh` | system settings (not linked — run by `--full`) |
 | `Brewfile` | every formula and cask |

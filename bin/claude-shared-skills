@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Restore generated Claude links; optionally install their upstream skills."""
+import argparse
+import json
+from pathlib import Path
+import subprocess
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def restore(root, home, external=False):
+    sources = json.loads((root / "claude/external.json").read_text())["shared_skills"]
+    if external:
+        for source, names in sources.items():
+            subprocess.run(["npx", "-y", "skills", "add", source, "--full-depth",
+                            "--skill", *names, "--agent", "claude-code", "-g", "-y"],
+                           check=True, cwd=home)
+    linked, missing = 0, []
+    for names in sources.values():
+        for name in names:
+            if Path(name).name != name or name in (".", ".."):
+                raise ValueError("Invalid skill name")
+            source = home / ".agents/skills" / name
+            dest = root / "claude/skills" / name
+            if not (source / "SKILL.md").is_file():
+                missing.append(name)
+                continue
+            if dest.is_symlink():
+                if dest.resolve() == source.resolve():
+                    linked += 1
+                    continue
+                dest.unlink()
+            elif dest.exists():
+                raise FileExistsError(f"Preserving local skill directory: {dest}")
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.symlink_to(source)
+            linked += 1
+    print(f"Linked {linked} shared Claude skills")
+    if missing:
+        print("Missing upstream skills (restore with --external): " + ", ".join(missing))
+    return missing
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--external", action="store_true")
+    args = parser.parse_args()
+    restore(ROOT, Path.home(), args.external)
