@@ -210,6 +210,11 @@ if servers:
 PYEOF
 fi
 
+if command -v python3 >/dev/null; then
+  info "Restoring Codex user settings and custom agents"
+  python3 "$DOTFILES/bin/codex-sync" install
+fi
+
 if [[ "${1:-}" == "--full" ]]; then
   info "Installing Homebrew packages (this takes a while)"
   command -v brew >/dev/null || {
@@ -231,8 +236,18 @@ if [[ "${1:-}" == "--full" ]]; then
   info "Installing Node LTS"
   eval "$(fnm env --shell bash)" && fnm install --lts && fnm default lts-latest
 
+  info "Installing Codex skills and Firecrawl"
+  python3 "$DOTFILES/bin/codex-sync" install --external
+
+  info "Installing shared Claude skills"
+  python3 "$DOTFILES/bin/claude-shared-skills" --external
+
   info "Applying macOS system settings"
   bash "$DOTFILES/macos/defaults.sh"
+fi
+
+if command -v python3 >/dev/null; then
+  python3 "$DOTFILES/bin/claude-shared-skills"
 fi
 
 [[ -d $BACKUP ]] && info "Replaced files backed up to ${BACKUP/#$HOME/\~}"

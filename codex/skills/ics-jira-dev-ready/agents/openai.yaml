@@ -1,0 +1,4 @@
+interface:
+  display_name: "ICS Jira Dev Ready"
+  short_description: "Find and prioritise your active sprint tickets"
+  default_prompt: "Use $ics-jira-dev-ready to list my Dev Ready tickets in the active QB sprint, with links, ordered by product priority."

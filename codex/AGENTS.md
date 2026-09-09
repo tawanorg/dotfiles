@@ -72,7 +72,7 @@ conclusion** — a Terraform plan, a document corpus, a sweep of routes. The
 separate context window is the point: the bulk stays out of this session.
 Do not delegate interactive work, where you need the state visible between
 turns. `terraform-plan-reviewer`, `doc-researcher` and `page-smoke-checker`
-are local; write more in `claude/agents/` when the same shape recurs.
+are local; write more in `Codex/agents/` when the same shape recurs.
 
 ## Reviewing
 
@@ -89,4 +89,4 @@ requirement is the value. Skip it for mechanical, fully specified requests; a
 one-line fix does not need a 7-step interrogation.
 
 The `pm-skills` plugins are installed but disabled on purpose. A project that
-wants them enables them in its own `.claude/settings.json`.
+wants them enables them in its own `.Codex/settings.json`.

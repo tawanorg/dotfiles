@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""Export portable Codex settings, or restore them without replacing local state."""
+import argparse
+import datetime
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import tempfile
+import tomllib
+from urllib.parse import urlsplit
+
+ROOT = Path(__file__).resolve().parents[1]
+APP_SERVERS = {"node_repl", "computer-use"}
+SECRET = re.compile(r"key|token|secret|password|auth|credential", re.I)
+PORTABLE_SETTINGS = (
+    "model", "model_reasoning_effort", "web_search", "desktop",
+    "developer_instructions", "apps",
+)
+APP_NOTIFY_PATHS = ("/.codex/computer-use/", "/Applications/ChatGPT.app/", "/Applications/Codex.app/")
+
+
+def portable(value, home, restore=False):
+    if isinstance(value, str):
+        return value.replace("{{HOME}}", str(home)) if restore else value.replace(str(home), "{{HOME}}")
+    if isinstance(value, dict):
+        return {k: portable(v, home, restore) for k, v in value.items()}
+    if isinstance(value, list):
+        return [portable(v, home, restore) for v in value]
+    return value
+
+
+def has_secret(server):
+    if any(SECRET.search(k) and not k.endswith("_env_var") for k in server):
+        return True
+    for field in ("env", "http_headers", "headers"):
+        if any(SECRET.search(k) for k in server.get(field, {})):
+            return True
+    url = urlsplit(server.get("url", ""))
+    return bool(url.username or url.password or url.query or url.fragment or
+                any(SECRET.search(str(arg)) for arg in server.get("args", [])))
+
+
+def capture(config):
+    result = {k: config[k] for k in PORTABLE_SETTINGS if k in config}
+    tui = {k: v for k, v in config.get("tui", {}).items() if k != "model_availability_nux"}
+    if tui:
+        result["tui"] = tui
+    notify = config.get("notify", [])
+    if notify and not any(marker in arg for arg in notify for marker in APP_NOTIFY_PATHS):
+        if not has_secret({"args": notify}):
+            result["notify"] = notify
+    hooks = {k: v for k, v in config.get("hooks", {}).items() if k != "state"}
+    if hooks:
+        result["hooks"] = hooks
+    result["mcp_servers"] = {}
+    for name, server in config.get("mcp_servers", {}).items():
+        if name in APP_SERVERS:
+            continue
+        if has_secret(server):
+            print(f"Skipped MCP server with potential credentials: {name}")
+            continue
+        result["mcp_servers"][name] = server
+    result["marketplaces"] = {k: v for k, v in config.get("marketplaces", {}).items()
+                              if v.get("source_type") == "git" and not has_secret({"url": v.get("source", "")})}
+    result["plugins"] = {k: v for k, v in config.get("plugins", {}).items()
+                          if k.rsplit("@", 1)[-1] in result["marketplaces"]}
+    skipped = set(config) - set(result) - {"projects", "hooks", "notify", "tui"}
+    if skipped:
+        print("Settings not covered by export; review before adding: " + ", ".join(sorted(skipped)))
+    return result
+
+
+def scalar(value):
+    if isinstance(value, (datetime.date, datetime.datetime, datetime.time)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return "{ " + ", ".join(f"{json.dumps(k)} = {scalar(v)}" for k, v in value.items()) + " }"
+    if isinstance(value, list):
+        return "[" + ", ".join(scalar(v) for v in value) + "]"
+    return json.dumps(value, ensure_ascii=False)
+
+
+def dumps(config):
+    lines = []
+
+    def table(value, path=()):
+        if path:
+            lines.extend(["", "[" + ".".join(json.dumps(k) for k in path) + "]"])
+        for key, item in value.items():
+            if not isinstance(item, dict):
+                lines.append(f"{json.dumps(key)} = {scalar(item)}")
+        for key, item in value.items():
+            if isinstance(item, dict):
+                table(item, (*path, key))
+
+    table(config)
+    text = "\n".join(lines) + "\n"
+    assert tomllib.loads(text) == config, "TOML round-trip failed; refusing to write"
+    return text
+
+
+def write(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp = tempfile.mkstemp(dir=path.parent)
+    try:
+        with os.fdopen(fd, "w") as stream:
+            stream.write(text)
+        os.replace(temp, path)
+    finally:
+        if os.path.exists(temp):
+            os.unlink(temp)
+
+
+def merge(local, tracked):
+    for key, value in tracked.items():
+        if isinstance(value, dict) and isinstance(local.get(key), dict):
+            merge(local[key], value)
+        else:
+            local[key] = value
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("export", "install"))
+    parser.add_argument("--codex-home", type=Path, default=Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")))
+    parser.add_argument("--external", action="store_true", help="Also install external skills and Firecrawl (install only)")
+    args = parser.parse_args()
+    live, tracked = args.codex_home, ROOT / "codex"
+    if args.external and (args.action != "install" or live.resolve() != (Path.home() / ".codex").resolve()):
+        parser.error("--external is supported only for install into the default user scope")
+    manifest = json.loads((tracked / "external.json").read_text())
+    if args.action == "export":
+        config = tomllib.loads((live / "config.toml").read_text())
+        write(tracked / "config.toml", dumps(portable(capture(config), Path.home())))
+        shutil.copy2(live / "AGENTS.md", tracked / "AGENTS.md")
+        for agent in (live / "agents").glob("*.toml"):
+            shutil.copy2(agent, tracked / "agents" / agent.name)
+        for name in manifest["local_skills"]:
+            shutil.copytree(live / "skills" / name, tracked / "skills" / name, dirs_exist_ok=True)
+        print(f"Exported Codex settings, agents and custom skills to {tracked}")
+        return
+
+    config_path = live / "config.toml"
+    local = tomllib.loads(config_path.read_text()) if config_path.exists() else {}
+    snapshot = portable(tomllib.loads((tracked / "config.toml").read_text()), Path.home(), restore=True)
+    merge(local, snapshot)
+    for name in manifest["removed_mcp_servers"]:
+        local.get("mcp_servers", {}).pop(name, None)
+    restored = dumps(local)
+    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    backup = live / "dotfiles-backups" / stamp
+
+    def backup_file(path):
+        if path.exists() or path.is_symlink():
+            dest = backup / path.relative_to(live)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, dest)
+
+    if not config_path.exists() or config_path.read_text() != restored:
+        backup_file(config_path)
+        write(config_path, restored)
+    sources = [tracked / "AGENTS.md", *(tracked / "agents").glob("*.toml"),
+               *(p for p in (tracked / "skills").rglob("*") if p.is_file())]
+    for source in sources:
+        dest = live / source.relative_to(tracked)
+        if dest.exists() and dest.read_bytes() == source.read_bytes():
+            continue
+        backup_file(dest)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if dest.is_symlink():
+            dest.unlink()
+        shutil.copy2(source, dest)
+    if args.external:
+        for command in manifest["install_commands"]:
+            subprocess.run(command, check=True, cwd=Path.home())
+    print(f"Restored Codex configuration to {live}")
+    if backup.exists():
+        print(f"Previous files backed up to {backup}")
+
+
+if __name__ == "__main__":
+    main()

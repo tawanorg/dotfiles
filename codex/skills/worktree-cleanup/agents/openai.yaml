@@ -1,0 +1,3 @@
+interface:
+  display_name: "Worktree Cleanup"
+  short_description: "Remove finished worktrees and their Docker resources"
