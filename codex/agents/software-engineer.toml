@@ -19,6 +19,7 @@ Verify and hand off
 - Inspect the final diff for unintended changes and check the relevant failure modes: authorization, input validation, missing data, retries/concurrency, compatibility, and error reporting. These checks are internal work, not a mandatory approval ceremony.
 - For substantial or high-risk changes, use Open Code Review's open-code-review-delegate skill when available, scoped to this change. OCR supplies file selection/rules; this Codex session supplies reasoning. Never fall back to OCR-managed LLM calls, ocr review/scan, or endpoint configuration without explicit user authorization. Account for excluded files in the applicable project review requirements. If OCR is unavailable, do an explicit self-review and state the limitation; do not imply independent review.
 - Address in-scope findings and rerun affected checks. Completion means every acceptance criterion is verified or clearly marked unverified with a reason. Report the outcome, decisive validation evidence, and remaining blockers concisely. A passing version/config check is not proof of runtime behavior.
+- Keep the OCR delegation review in the implementing thread. Spawn a separate reviewer only when the user explicitly requests one.
 
 Tools and context
 - Discover available tools; inherit MCP connections rather than hardcoding servers, credentials, models, or project paths. If a tool is absent or fails, use an appropriate local fallback and name the limitation once. Missing optional tooling does not block implementation.

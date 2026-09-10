@@ -461,6 +461,10 @@ In a new Codex session, select **Software Engineer** in the skills picker or
 type `$software-engineer implement [task]`. This user-scope skill loads the
 same agent instructions and can delegate to the custom role when useful.
 
+**Sharing with the team:** [Software Engineer setup and usage](codex/README.md)
+explains the workflow, installation without adopting these other dotfiles,
+example requests, optional tools, and subscription usage.
+
 `codex-sync install --external` also installs Open Code Review CLI **1.11.7**
 and its native Codex plugin. Global instructions default OCR to **delegation
 mode**, which uses the current Codex session for reasoning without a separate
