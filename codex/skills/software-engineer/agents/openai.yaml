@@ -1,0 +1,4 @@
+interface:
+  display_name: "Software Engineer"
+  short_description: "Implement and verify features, fixes, and refactors"
+  default_prompt: "Use $software-engineer to implement my requested change and verify the result."

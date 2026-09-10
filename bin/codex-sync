@@ -136,7 +136,7 @@ def main():
         config = tomllib.loads((live / "config.toml").read_text())
         write(tracked / "config.toml", dumps(portable(capture(config), Path.home())))
         shutil.copy2(live / "AGENTS.md", tracked / "AGENTS.md")
-        for agent in (live / "agents").glob("*.toml"):
+        for agent in [*(live / "agents").glob("*.toml"), *(live / "agents").glob("*.md")]:
             shutil.copy2(agent, tracked / "agents" / agent.name)
         for name in manifest["local_skills"]:
             shutil.copytree(live / "skills" / name, tracked / "skills" / name, dirs_exist_ok=True)
@@ -163,6 +163,7 @@ def main():
         backup_file(config_path)
         write(config_path, restored)
     sources = [tracked / "AGENTS.md", *(tracked / "agents").glob("*.toml"),
+               *(tracked / "agents").glob("*.md"),
                *(p for p in (tracked / "skills").rglob("*") if p.is_file())]
     for source in sources:
         dest = live / source.relative_to(tracked)
