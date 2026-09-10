@@ -108,6 +108,11 @@ class CodexSyncTests(unittest.TestCase):
             self.assertTrue((live / "skills/worktree/SKILL.md").exists())
             self.assertTrue((live / "skills/worktree-cleanup/references/docker.md").exists())
             self.assertTrue((live / "skills/ics-jira-dev-ready/SKILL.md").exists())
+            skill = live / "skills/software-engineer/SKILL.md"
+            self.assertTrue(skill.exists())
+            self.assertTrue((skill.parent / "agents/openai.yaml").exists())
+            self.assertEqual((skill.parent / "../../agents/software-engineer.toml").resolve(),
+                             (live / "agents/software-engineer.toml").resolve())
             self.assertEqual(len(list((live / "agents").glob("*.toml"))), 4)
             engineer = live / "agents/software-engineer.toml"
             self.assertEqual(tomllib.loads(engineer.read_text())["name"], "software_engineer")

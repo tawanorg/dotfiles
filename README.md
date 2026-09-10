@@ -423,7 +423,7 @@ The generated links are ignored by Git, so another machine gets its own paths.
 `codex-sync export` captures this user's model and web-search settings, status
 line, developer instructions, app preferences, portable notifications/hooks,
 MCP servers, Git marketplace/plugin preferences, global instructions and custom
-agents. It also saves the local `worktree`, `worktree-cleanup` and
+agents. It also saves the local `worktree`, `worktree-cleanup`, `software-engineer` and
 `ics-jira-dev-ready` skills. Run it after changing Codex settings, then review
 the diff. Home paths in configuration are stored as `{{HOME}}`; unrecognised
 top-level settings are reported for review instead of silently omitted.
@@ -457,7 +457,9 @@ each project's conventions, implements scoped changes, and verifies behavior.
 It inherits the parent session's model and available MCP connections, including
 Serena, Context7 and Firecrawl. Its usage guide travels with it during export
 and restore: [`codex/agents/software-engineer-guide.md`](codex/agents/software-engineer-guide.md).
-In a new Codex session, ask `Use software_engineer to implement [task]`.
+In a new Codex session, select **Software Engineer** in the skills picker or
+type `$software-engineer implement [task]`. This user-scope skill loads the
+same agent instructions and can delegate to the custom role when useful.
 
 `codex-sync install --external` also installs Open Code Review CLI **1.11.7**
 and its native Codex plugin. Global instructions default OCR to **delegation

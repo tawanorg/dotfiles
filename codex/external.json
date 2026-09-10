@@ -1,5 +1,5 @@
 {
-  "local_skills": ["worktree", "worktree-cleanup", "ics-jira-dev-ready"],
+  "local_skills": ["worktree", "worktree-cleanup", "ics-jira-dev-ready", "software-engineer"],
   "removed_mcp_servers": ["graphify"],
   "install_commands": [
     ["npm", "install", "-g", "@alibaba-group/open-code-review@1.11.7"],
