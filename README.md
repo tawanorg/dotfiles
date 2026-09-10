@@ -423,8 +423,8 @@ The generated links are ignored by Git, so another machine gets its own paths.
 `codex-sync export` captures this user's model and web-search settings, status
 line, developer instructions, app preferences, portable notifications/hooks,
 MCP servers, Git marketplace/plugin preferences, global instructions and custom
-agents. It also saves the local `worktree`, `worktree-cleanup`, `software-engineer` and
-`ics-jira-dev-ready` skills. Run it after changing Codex settings, then review
+agents. It also saves the local `worktree`, `worktree-cleanup` and
+`software-engineer` skills. Run it after changing Codex settings, then review
 the diff. Home paths in configuration are stored as `{{HOME}}`; unrecognised
 top-level settings are reported for review instead of silently omitted.
 
