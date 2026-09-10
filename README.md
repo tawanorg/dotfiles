@@ -452,6 +452,21 @@ configuration is tracked; plugin caches are not copied. Shared skills under
 
 Requires Python 3.11+ (`tomllib`).
 
+**Implementation and review.** The personal `software_engineer` agent discovers
+each project's conventions, implements scoped changes, and verifies behavior.
+It inherits the parent session's model and available MCP connections, including
+Serena, Context7 and Firecrawl. Its usage guide travels with it during export
+and restore: [`codex/agents/software-engineer-guide.md`](codex/agents/software-engineer-guide.md).
+In a new Codex session, ask `Use software_engineer to implement [task]`.
+
+`codex-sync install --external` also installs Open Code Review CLI **1.11.7**
+and its native Codex plugin. Global instructions default OCR to **delegation
+mode**, which uses the current Codex session for reasoning without a separate
+OCR LLM endpoint. Ask `@Open Code Review review my current changes` in a new
+session. Subscription-authenticated Codex uses its subscription allowance;
+external services such as Firecrawl can consume separate credits. No OCR
+credentials or plugin caches are tracked.
+
 ## Not included, on purpose
 
 - **Docker Desktop** — its installer needs a sudo password, so this uses
