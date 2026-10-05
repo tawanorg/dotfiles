@@ -81,6 +81,10 @@ different jobs. Use `/code-review` for correctness on a diff. Use the Matt
 Pocock one when the question is whether the change matches a written spec or
 the repo's documented standards. Say which you ran.
 
+When Open Code Review is selected, use its `open-code-review-delegate` skill by
+default. Do not run `ocr review` or configure an OCR LLM endpoint unless the
+user explicitly requests OCR-managed review with their own API credentials.
+
 ## Scope
 
 `critical-developer-mindset` declares itself always-on. Treat it as applying to

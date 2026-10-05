@@ -337,6 +337,10 @@
 "source_type" = "git"
 "source" = "https://github.com/Egonex-AI/Understand-Anything.git"
 
+["marketplaces"."open-code-review"]
+"source_type" = "git"
+"source" = "https://github.com/alibaba/open-code-review.git"
+
 ["plugins"]
 
 ["plugins"."document-skills@anthropic-agent-skills"]
@@ -349,4 +353,7 @@
 "enabled" = true
 
 ["plugins"."understand-anything@understand-anything"]
+"enabled" = true
+
+["plugins"."open-code-review-codex@open-code-review"]
 "enabled" = true

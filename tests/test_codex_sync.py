@@ -107,8 +107,21 @@ class CodexSyncTests(unittest.TestCase):
             self.assertIn("firecrawl", restored["mcp_servers"])
             self.assertTrue((live / "skills/worktree/SKILL.md").exists())
             self.assertTrue((live / "skills/worktree-cleanup/references/docker.md").exists())
-            self.assertTrue((live / "skills/ics-jira-dev-ready/SKILL.md").exists())
-            self.assertEqual(len(list((live / "agents").glob("*.toml"))), 3)
+            self.assertFalse((live / "skills/ics-jira-dev-ready").exists())
+            skill = live / "skills/software-engineer/SKILL.md"
+            self.assertTrue(skill.exists())
+            self.assertTrue((skill.parent / "agents/openai.yaml").exists())
+            self.assertEqual((skill.parent / "../../agents/software-engineer.toml").resolve(),
+                             (live / "agents/software-engineer.toml").resolve())
+            self.assertEqual(len(list((live / "agents").glob("*.toml"))), 4)
+            engineer = live / "agents/software-engineer.toml"
+            self.assertEqual(tomllib.loads(engineer.read_text())["name"], "software_engineer")
+            self.assertEqual((live / "agents/software-engineer-guide.md").read_bytes(),
+                             (SCRIPT.parent.parent / "codex/agents/software-engineer-guide.md").read_bytes())
+            self.assertTrue(restored["plugins"]["open-code-review-codex@open-code-review"]["enabled"])
+            self.assertEqual(restored["marketplaces"]["open-code-review"]["source"],
+                             "https://github.com/alibaba/open-code-review.git")
+            self.assertIn("open-code-review-delegate", (live / "AGENTS.md").read_text())
             self.assertNotIn("{{HOME}}", (live / "config.toml").read_text())
             portable = sync.portable(copy.deepcopy(restored), Path.home())
             self.assertEqual(sync.portable(portable, Path.home(), restore=True), restored)

@@ -424,7 +424,7 @@ The generated links are ignored by Git, so another machine gets its own paths.
 line, developer instructions, app preferences, portable notifications/hooks,
 MCP servers, Git marketplace/plugin preferences, global instructions and custom
 agents. It also saves the local `worktree`, `worktree-cleanup` and
-`ics-jira-dev-ready` skills. Run it after changing Codex settings, then review
+`software-engineer` skills. Run it after changing Codex settings, then review
 the diff. Home paths in configuration are stored as `{{HOME}}`; unrecognised
 top-level settings are reported for review instead of silently omitted.
 
@@ -451,6 +451,27 @@ configuration is tracked; plugin caches are not copied. Shared skills under
 `~/.agents/skills` remain owned by their upstream installers.
 
 Requires Python 3.11+ (`tomllib`).
+
+**Implementation and review.** The personal `software_engineer` agent discovers
+each project's conventions, implements scoped changes, and verifies behavior.
+It inherits the parent session's model and available MCP connections, including
+Serena, Context7 and Firecrawl. Its usage guide travels with it during export
+and restore: [`codex/agents/software-engineer-guide.md`](codex/agents/software-engineer-guide.md).
+In a new Codex session, select **Software Engineer** in the skills picker or
+type `$software-engineer implement [task]`. This user-scope skill loads the
+same agent instructions and can delegate to the custom role when useful.
+
+**Sharing with the team:** [Software Engineer setup and usage](codex/README.md)
+explains the workflow, installation without adopting these other dotfiles,
+example requests, optional tools, and subscription usage.
+
+`codex-sync install --external` also installs Open Code Review CLI **1.11.7**
+and its native Codex plugin. Global instructions default OCR to **delegation
+mode**, which uses the current Codex session for reasoning without a separate
+OCR LLM endpoint. Ask `@Open Code Review review my current changes` in a new
+session. Subscription-authenticated Codex uses its subscription allowance;
+external services such as Firecrawl can consume separate credits. No OCR
+credentials or plugin caches are tracked.
 
 ## Not included, on purpose
 
