@@ -1,15 +1,9 @@
 ---
 name: dotagent
-description: Start, inspect, pause or resume the persistent personal Jira-to-draft-PR engineering runtime.
+description: Work with the persistent dotagent worker from this chat—start a task, give instructions, remember project guidance, inspect progress, or pause and resume work.
 ---
 
-Use the installed `dotagent` CLI. Default invocation: `dotagent start --host codex`.
-It is a persistent process; keep it running in a terminal or install its supervisor
-service with `dotagent install-service --host codex`. Use `dotagent status` to report
-actual progress. Forward pause/resume/cancel requests to the corresponding command.
-
-The canonical workflow is `~/.local/share/dotagent/PLAYBOOK.md`, sourced from
-`dotagent/PLAYBOOK.md` in [tawanorg/dotagent](https://github.com/tawanorg/dotagent).
-Read that repository's README for setup. Current-directory project configuration
-selects isolated state and brain memory; `--project NAME` selects explicitly.
-Do not replace the runtime with a prompt loop or claim completion from a worker response.
+Read `~/.local/share/dotagent/INTERACTION.md` and follow it for the user's request.
+Use `HOST=codex` when that guide requests a host choice. Interpret the user's
+natural language in this conversation; preserve context in the queued request.
+Invoke with `$dotagent`, or select dotagent through `/skills`.
