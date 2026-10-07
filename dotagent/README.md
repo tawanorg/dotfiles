@@ -1,4 +1,4 @@
-# Personal engineer
+# Dotagent
 
 A persistent Jira → isolated worktree → local verification → draft PR runtime.
 Python 3.11+ standard library owns lifecycle and SQLite state. Native Claude Code
@@ -9,28 +9,28 @@ or Codex owns each bounded engineering iteration using its existing login.
 From this dotfiles checkout:
 
 ```sh
-python3 engineer/install.py
-engineer doctor --host codex
-engineer start --host codex
-# Or: engineer start --host claude
+python3 dotagent/install.py
+dotagent doctor --host codex
+dotagent start --host codex
+# Or: dotagent start --host claude
 ```
 
 `~/.local/bin` must be on PATH. The installer adds only the CLI/playbook links and
 a config file if absent; it does not rerun the broad dotfiles installer or replace
-existing host settings. Review `~/.config/engineer/config.toml`: the provided
+existing host settings. Review `~/.config/dotagent/config.toml`: the provided
 Coterie adapter uses `Jerawine/coterie-qb-prototype`, your assigned QB backlog,
 `origin/main`, and the configured local checkout. No credentials belong there.
 
 Keep the startup command in a terminal. For login/restart/wake resumption:
 
 ```sh
-engineer install-service --host codex
-engineer status
-engineer pause
-engineer resume
-engineer cancel QB-123
-engineer resume QB-123     # Explicitly retry after resolving a blocker
-engineer cleanup QB-123    # Stop owned services; preserve worktree and data
+dotagent install-service --host codex
+dotagent status
+dotagent pause
+dotagent resume
+dotagent cancel QB-123
+dotagent resume QB-123     # Explicitly retry after resolving a blocker
+dotagent cleanup QB-123    # Stop owned services; preserve worktree and data
 ```
 
 The macOS LaunchAgent uses RunAtLoad/KeepAlive and a 30-second restart throttle.
@@ -38,7 +38,7 @@ It resumes after login and wake; no laptop can execute while asleep or powered o
 Pause is persisted, including across restarts. Cancel is task-specific. Cleanup
 never prunes Docker, deletes data or removes a worktree. Use your existing worktree
 cleanup skill after review/merge when deliberate deletion is wanted.
-An interactive `engineer start --host …` resumes an installed paused supervisor
+An interactive `dotagent start --host …` resumes an installed paused supervisor
 and applies the host choice to subsequent iterations; it does not create a second
 worker. Service restarts preserve a deliberate pause.
 
@@ -70,7 +70,7 @@ replacement sessions itself. It never sends Claude slash commands to Codex.
 
 ## State and recovery
 
-Operational files live in `~/.local/state/engineer` with private permissions:
+Operational files live in `~/.local/state/dotagent` with private permissions:
 
 - `state.sqlite`: unique task claims, criteria, decisions, source ticket data,
   attempts, blockers, ownership, delivery state and event/usage ledger.
@@ -133,13 +133,16 @@ ports, rewrites project volume/network identities, adds ownership labels and app
 per-service CPU/memory limits. External volumes/networks, privileged containers and
 writable binds outside the task worktree are rejected. Image/build caches are shared;
 mutable databases, auth, search and mail storage are task-specific.
+Blocked, cancelled and review tasks have their owned services stopped before the
+next task, retaining worktrees/data. Set `repository.keep_inactive_environments=true`
+only when deliberately keeping those stacks running for manual review.
 
 Coterie pins all DB clients to its internal task Postgres, sets local auth mode and
 matching app/Keycloak public URLs, and excludes inherited production DB/Graph/SMTP
 credentials. All eight services and four setup jobs must pass readiness. Previously
 applied SQL migrations cannot be modified/deleted without stopping for inspection.
 Host checks receive explicit task-local database URLs. Destructive Postgres checks
-use a separate `engineer_test` database in that task's own database container.
+use a separate `dotagent_test` database in that task's own database container.
 Ports are transactionally reserved; Docker remains the final bind authority, so an
 external process racing for a port produces an observable startup failure.
 
@@ -176,15 +179,15 @@ The workflow never merges, deploys, publishes packages or marks tickets done.
 
 ```sh
 python3 -m unittest discover -s tests -v
-python3 tests/engineer_live.py /absolute/path/to/node_modules/@playwright/test
+python3 tests/dotagent_live.py /absolute/path/to/node_modules/@playwright/test
 ```
 
 The opt-in live check starts two Docker apps, proves port/data isolation, runs a
 browser interaction with console/network checks, injects a real behavior failure,
 verifies rejection, fixes it and reruns. It stops only its own services and preserves
-its ownership/evidence receipt under `~/.local/state/engineer-validation`.
+its ownership/evidence receipt under `~/.local/state/dotagent-validation`.
 
-Use `engineer status --json` and the task logs for failures. `doctor` checks binaries,
+Use `dotagent status --json` and the task logs for failures. `doctor` checks binaries,
 host/GitHub auth, Docker, Compose, refs, disk space and attachment support; actual
 Jira/browser permissions are verified by live calls. Authenticate Jira using
 `codex mcp login atlassian`; do not paste credentials into tickets or prompts.
@@ -197,7 +200,7 @@ them there using supported mechanisms, and supervise this command with systemd:
 
 ```ini
 [Service]
-ExecStart=/absolute/python3 /absolute/dotfiles/bin/engineer start --host codex
+ExecStart=/absolute/python3 /absolute/dotfiles/bin/dotagent start --host codex
 Restart=on-failure
 RestartSec=30
 ```

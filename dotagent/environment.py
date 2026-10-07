@@ -38,7 +38,7 @@ def revision(path):
 def prepare_worktree(state, task, config):
     repo = Path(config['path']).expanduser().resolve()
     common = Path(git(repo, 'rev-parse', '--path-format=absolute', '--git-common-dir'))
-    claims = common / 'engineer-claims'
+    claims = common / 'dotagent-claims'
     claims.mkdir(exist_ok=True, mode=0o700)
     claim = claims / (hashlib.sha256(task['id'].encode()).hexdigest() + '.json')
     owner = {'state': str(state.root), 'task': task['id']}
@@ -54,7 +54,7 @@ def prepare_worktree(state, task, config):
             os.fsync(stream.fileno())
     if 'worktree' not in task:
         slug = task['id'].lower()
-        task['branch'] = f'engineer/{slug}'
+        task['branch'] = f'dotagent/{slug}'
         task['base'] = git(repo, 'rev-parse', config.get('base', 'HEAD'))
         task['worktree'] = str(repo.parent / (repo.name + '-worktrees') / slug)
         state.save(task)  # Write intent before mutation; reconcile after a crash.
@@ -137,13 +137,13 @@ def isolate_compose(model, project, worktree, ports, cpus, memory):
             if kind == 'volumes' and (spec.get('driver_opts') or spec.get('driver', 'local') != 'local'):
                 raise RuntimeError('custom volume drivers require a dedicated isolation adapter')
             spec['name'] = f'{project}_{name}'
-            spec.setdefault('labels', {})['dev.personal-engineer.owner'] = project
+            spec.setdefault('labels', {})['dev.dotagent.owner'] = project
     for name, spec in model['services'].items():
         if spec.get('privileged') or spec.get('network_mode') or spec.get('pid') or spec.get('devices'):
             raise RuntimeError(f'unsafe shared host configuration: {name}')
         spec.pop('container_name', None)
         spec['cpus'], spec['mem_limit'] = str(cpus), memory
-        spec.setdefault('labels', {})['dev.personal-engineer.owner'] = project
+        spec.setdefault('labels', {})['dev.dotagent.owner'] = project
         for port in spec.get('ports', []):
             key = f"{name}:{port['target']}"
             port['published'], port['host_ip'] = str(ports[key]), '127.0.0.1'
@@ -199,7 +199,7 @@ class Environment:
         if self.config.get('adapter') == 'coterie':
             env.update(coterie_variables(ports))
             host_db = f"postgres://coterie:coterie@127.0.0.1:{ports['db:5432']}"
-            env.update(DATABASE_URL=host_db + '/coterie', TEST_DATABASE_URL=host_db + '/engineer_test',
+            env.update(DATABASE_URL=host_db + '/coterie', TEST_DATABASE_URL=host_db + '/dotagent_test',
                        KEYCLOAK_INTERNAL_URL=env['KEYCLOAK_PUBLIC_URL'], TYPESENSE_HOST='127.0.0.1',
                        TYPESENSE_PORT=str(ports['typesense:8108']),
                        TYPESENSE_API_KEY='local-dev-typesense-key-not-for-deployment',
@@ -237,9 +237,9 @@ class Environment:
         with (self.directory / 'compose-start.log').open('w') as output:
             process = subprocess.Popen(args, cwd=worktree, env=safe_env(), stdout=output,
                                        stderr=subprocess.STDOUT, start_new_session=True)
-            self.state.set('worker', process_record(process, self.task['id'], args, self.directory))
             started = time.monotonic()
             try:
+                self.state.set('worker', process_record(process, self.task['id'], args, self.directory))
                 while process.poll() is None:
                     self.state.set('heartbeat', time.time())
                     if self.state.get('paused') or self.state.task(self.task['id'])['status'] == 'cancelled':
@@ -269,10 +269,11 @@ class Environment:
             if ready and jobs:
                 if self.config.get('adapter') == 'coterie':
                     base = self.argv('exec', '-T', 'db', 'psql', '-U', 'coterie', '-d', 'coterie')
-                    exists = command(base + ['-tAc', "SELECT 1 FROM pg_database WHERE datname='engineer_test'"], env=safe_env()).stdout.strip()
+                    exists = command(base + ['-tAc', "SELECT 1 FROM pg_database WHERE datname='dotagent_test'"], env=safe_env()).stdout.strip()
                     if exists != '1':
-                        command(base + ['-c', 'CREATE DATABASE engineer_test'], env=safe_env())
+                        command(base + ['-c', 'CREATE DATABASE dotagent_test'], env=safe_env())
                 env['ready_at'] = time.time()
+                env.pop('stopped_at', None)
                 self.state.save(self.task)
                 return
             time.sleep(2)
@@ -283,3 +284,5 @@ class Environment:
         if 'environment' in self.task:
             self.inventory()
             command(self.argv('stop'), env=safe_env())
+            self.task['environment']['stopped_at'] = time.time()
+            self.state.save(self.task)

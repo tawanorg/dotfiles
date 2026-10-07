@@ -1,7 +1,7 @@
 """Opt-in real Docker/browser fixture. No GitHub/Jira writes or LLM calls.
 
-python3 tests/engineer_live.py /absolute/path/to/node_modules/@playwright/test
-Artifacts and ownership receipt survive under ~/.local/state/engineer-validation.
+python3 tests/dotagent_live.py /absolute/path/to/node_modules/@playwright/test
+Artifacts and ownership receipt survive under ~/.local/state/dotagent-validation.
 """
 import json
 from pathlib import Path
@@ -10,14 +10,14 @@ import time
 import urllib.request
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from engineer.state import State, atomic
-from engineer.hosts import command
-from engineer.environment import Environment, git, prepare_worktree
-from engineer.runtime import verify
+from dotagent.state import State, atomic
+from dotagent.hosts import command
+from dotagent.environment import Environment, git, prepare_worktree
+from dotagent.runtime import verify
 
 
 def run(package):
-    root = Path.home() / '.local/state/engineer-validation' / str(time.time_ns())
+    root = Path.home() / '.local/state/dotagent-validation' / str(time.time_ns())
     root.mkdir(parents=True, mode=0o700)
     repo = root / 'fixture'
     repo.mkdir()

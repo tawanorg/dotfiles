@@ -68,7 +68,7 @@ Return the structured checkpoint. action=verify only after implementation and co
 the runtime then starts Compose and executes every frozen criterion and mandatory gate independently.
 Each criterion needs an argv command that exits nonzero if unmet, cwd relative to the worktree,
 and kind=test or running_app. At least one check must exercise changed behavior against the live
-application (ENGINEER_BASE_URL environment variable), unless the UI browser scenario supplies that.
+application (DOTAGENT_BASE_URL environment variable), unless the UI browser scenario supplies that.
 numbered-test-ready manual instructions and a precise expected result. Preserve all frozen criteria.
 For UI changes write a browser scenario outside source at {directory / 'behavior.mjs'}.
 It must export default async function({{page, expect, baseURL, evidence}}), exercise the actual interaction,
@@ -90,15 +90,15 @@ def run_check(state, task, check, config, label):
     fingerprint = revision(task['worktree'])
     path = directory / f'check-{time.time_ns()}.log'
     env = Environment(state, task, config).check_environment()
-    env['ENGINEER_BASE_URL'] = task['environment']['base_url']
-    env['ENGINEER_ARTIFACT_DIR'] = str(directory)
+    env['DOTAGENT_BASE_URL'] = env['ENGINEER_BASE_URL'] = task['environment']['base_url']
+    env['DOTAGENT_ARTIFACT_DIR'] = env['ENGINEER_ARTIFACT_DIR'] = str(directory)
     argv = check['argv']
     started = time.time()
     with open(path, 'w') as output:
         process = subprocess.Popen(argv, cwd=cwd, env=env, stdout=output, stderr=subprocess.STDOUT,
                                    start_new_session=True)
-        state.set('worker', process_record(process, task['id'], argv, directory))
         try:
+            state.set('worker', process_record(process, task['id'], argv, directory))
             while process.poll() is None:
                 state.set('heartbeat', time.time())
                 if state.get('paused') or state.task(task['id'])['status'] == 'cancelled':
@@ -224,6 +224,23 @@ Verification evidence: {json.dumps(task['evidence'][-8:])}
         task['phase'] = 'render' if task['artifacts'] else 'jira'
         task['next_action'] = f'Check attachment rendering in {url}' if task['artifacts'] else 'Update Jira with verified PR'
     elif task['phase'] == 'render':
+        manifest, receipt = directory / 'attachment-manifest.json', directory / 'render-result.json'
+        atomic(manifest, task['delivery']['attachments'])
+        receipt.unlink(missing_ok=True)
+        try:
+            result = command(['node', str(Path(__file__).with_name('render.mjs')), task['delivery']['pr'],
+                              str(manifest), str(receipt), project.get('playwright_package', '@playwright/test')],
+                             cwd=task['worktree'], timeout=120, check=False)
+            rendered = json.loads(receipt.read_text()) if receipt.exists() else {}
+            if result.returncode == 0 and rendered.get('rendered'):
+                task['delivery']['rendered'] = True
+                task['delivery']['render_receipt'] = str(receipt)
+                task['phase'] = 'jira'
+                state.save(task)
+                state.handover(task)
+                return
+        except (OSError, subprocess.TimeoutExpired):
+            pass  # Missing public access falls through to the authenticated host browser.
         # Browser authentication belongs to host MCP, never copied from the user's profile.
         schema = obj({'rendered': {'type': 'boolean'}, 'observed_urls': STRINGS, 'error': STRING})
         result, usage = execute(task['host'], f'''Use authenticated browser tools to open this draft PR:
@@ -301,6 +318,17 @@ def supervise(state, config, host, once=False):
                     return
                 time.sleep(2)
                 continue
+            if not config['repository'].get('keep_inactive_environments', False):
+                for inactive in state.tasks():
+                    environment = inactive.get('environment', {})
+                    if inactive['status'] in ('blocked', 'cancelled', 'review') and environment and not environment.get('stopped_at'):
+                        try:
+                            Environment(state, inactive, config['repository']).stop()
+                        except Exception as error:
+                            state.set('intake_error', 'Owned environment cleanup failed: ' + str(error))
+                            state.set('paused', True)
+                if state.get('paused'):
+                    continue
             active = [t for t in state.tasks() if t['status'] == 'active']
             reconciled.intersection_update(t['id'] for t in active)
             task = active[0] if active else None
@@ -344,7 +372,7 @@ def supervise(state, config, host, once=False):
                 elif task.get('retry_at', 0) <= time.time():
                     logfile = state.directory(task['id']) / 'worker.log'
                     with logfile.open('a') as output:
-                        args = [sys.executable, str(Path(__file__).parents[1] / 'bin' / 'engineer'),
+                        args = [sys.executable, str(Path(__file__).parents[1] / 'bin' / 'dotagent'),
                                 '--config', config['_path'], '_work', task['id']]
                         process = subprocess.Popen(args, stdout=output, stderr=subprocess.STDOUT,
                                                    start_new_session=True)

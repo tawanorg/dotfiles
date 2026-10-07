@@ -64,10 +64,10 @@ Do not edit files, create workers, or mutate Jira/GitHub.
         return result['tickets']
 
     def progress(self, task, text):
-        marker = f"personal-engineer:{task['id']}"
+        marker = f"dotagent:{task['id']}"
         body = marker + '\n' + text
         result = self.call(f'''Use Atlassian MCP at {self.config['site']}.
-On issue {task['id']}, read ALL paginated comments and find the exact marker {marker!r}.
+On issue {task['id']}, read ALL paginated comments and find the exact marker {marker!r} or its legacy spelling personal-engineer:{task['id']}.
 Create one comment if none exists, otherwise update that same comment only if its body differs.
 Do not add another comment on retries. Do not transition the ticket. Body to set:
 {json.dumps(body)}
@@ -157,7 +157,7 @@ class GitHub:
 
     def body(self, attachments, pending=None):
         task = self.task
-        lines = [f"<!-- personal-engineer:{task['id']} -->", task['ticket']['url'], '',
+        lines = [f"<!-- dotagent:{task['id']} -->", task['ticket']['url'], '',
                  task['summary'], '', task['implementation'], '', '### Local verification', '',
                  f"Commit: `{task['commit']}`; content fingerprint: `{task['verified_revision']}`.", '']
         for evidence in task['evidence']:
@@ -171,18 +171,18 @@ class GitHub:
                     identity = artifact['sha256']
                     url = attachments.get(identity)
                     if url:
-                        lines += [f"\n   ![engineer-{identity}]({url})\n"]
+                        lines += [f"\n   ![dotagent-{identity}]({url})\n"]
                     elif pending and pending['sha256'] == identity:
-                        lines += [f"\n   ![engineer-{identity}]({pending['path']})\n"]
+                        lines += [f"\n   ![dotagent-{identity}]({pending['path']})\n"]
                     else:
                         lines += ['\n   Screenshot upload incomplete.\n']
         lines += ['', '### Limitations', '', '\n'.join(task.get('limitations', [])) or 'None recorded.',
-                  f"<!-- /personal-engineer:{task['id']} -->", '']
+                  f"<!-- /dotagent:{task['id']} -->", '']
         return '\n'.join(lines)
 
     @staticmethod
     def attachment_urls(body):
-        return dict(re.findall(r'!\[engineer-([a-f0-9]{64})\]\((https://(?:github\.com/user-attachments/assets/|user-images\.githubusercontent\.com/)[^\s)]+)\)', body))
+        return dict(re.findall(r'!\[(?:dotagent|engineer)-([a-f0-9]{64})\]\((https://(?:github\.com/user-attachments/assets/|user-images\.githubusercontent\.com/)[^\s)]+)\)', body))
 
     def deliver(self):
         task = self.task
@@ -205,10 +205,11 @@ class GitHub:
         def write_body(pending=None):
             body = self.body(attachments, pending)
             if pr:
-                start, end = f"<!-- personal-engineer:{task['id']} -->", f"<!-- /personal-engineer:{task['id']} -->"
-                old = pr['body']
+                start, end = f"<!-- dotagent:{task['id']} -->", f"<!-- /dotagent:{task['id']} -->"
+                old = pr['body'].replace(f'<!-- personal-engineer:{task["id"]} -->', start).replace(
+                    f'<!-- /personal-engineer:{task["id"]} -->', end)
                 if start in old and end in old:
-                    body = old[:old.index(start)] + body + old[old.index(end) + len(end):]
+                    body = old[:old.index(start)] + body.rstrip('\n') + old[old.index(end) + len(end):]
                 elif old.strip():
                     body = old + '\n\n' + body
             atomic(bodyfile, body)

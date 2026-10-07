@@ -19,7 +19,7 @@ def load_config(path):
     path = Path(path).expanduser().resolve()
     config = tomllib.loads(path.read_text())
     config['_path'] = str(path)
-    config.setdefault('state_dir', '~/.local/state/engineer')
+    config.setdefault('state_dir', '~/.local/state/dotagent')
     config.setdefault('host', {})
     config.setdefault('limits', {})
     for key, value in {'max_iterations': 30, 'max_failures': 3, 'max_stagnant': 4,
@@ -79,12 +79,12 @@ def doctor(config, host):
 
 
 def install_service(config, host):
-    executable = str(Path(__file__).parents[1] / 'bin' / 'engineer')
+    executable = str(Path(__file__).parents[1] / 'bin' / 'dotagent')
     if sys.platform == 'darwin':
-        target = Path.home() / 'Library/LaunchAgents/dev.personal-engineer.plist'
+        target = Path.home() / 'Library/LaunchAgents/dev.dotagent.plist'
         state = Path(config['state_dir']).expanduser()
         state.mkdir(parents=True, exist_ok=True, mode=0o700)
-        data = {'Label': 'dev.personal-engineer',
+        data = {'Label': 'dev.dotagent',
                 'ProgramArguments': [sys.executable, executable, '--config', config['_path'],
                                      'start', '--host', host, '--service'],
                 'RunAtLoad': True, 'KeepAlive': True, 'ThrottleInterval': 30,
@@ -106,8 +106,8 @@ def install_service(config, host):
 
 def main():
     os.umask(0o077)
-    parser = argparse.ArgumentParser(prog='engineer')
-    parser.add_argument('--config', default=os.environ.get('ENGINEER_CONFIG', '~/.config/engineer/config.toml'))
+    parser = argparse.ArgumentParser(prog='dotagent')
+    parser.add_argument('--config', default=os.environ.get('DOTAGENT_CONFIG', os.environ.get('ENGINEER_CONFIG', '~/.config/dotagent/config.toml')))
     commands = parser.add_subparsers(dest='action', required=True)
     for name in ('start', 'doctor', 'install-service'):
         sub = commands.add_parser(name)
@@ -198,7 +198,7 @@ def main():
     except KeyboardInterrupt:
         print('Stopped. Checkpoint remains available.', file=sys.stderr)
     except Exception as error:
-        print('engineer: ' + str(error), file=sys.stderr)
+        print('dotagent: ' + str(error), file=sys.stderr)
         raise SystemExit(1) from None
 
 

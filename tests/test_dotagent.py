@@ -13,11 +13,11 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from engineer.state import State
-from engineer.environment import allocate_port, isolate_compose, revision, git, prepare_worktree
-from engineer.hosts import command, execute, host_command, process_record
-from engineer.integrations import GitHub, Jira, select_ticket
-from engineer.runtime import recover_child, recover_iteration, valid_report, run_check
+from dotagent.state import State
+from dotagent.environment import allocate_port, isolate_compose, revision, git, prepare_worktree
+from dotagent.hosts import command, execute, host_command, process_record
+from dotagent.integrations import GitHub, Jira, select_ticket
+from dotagent.runtime import recover_child, recover_iteration, valid_report, run_check
 
 
 class EngineerTests(unittest.TestCase):
@@ -68,7 +68,7 @@ class EngineerTests(unittest.TestCase):
         self.assertEqual(path, prepare_worktree(self.state, self.task, {'path': str(self.repo)}))
         self.state.handover(self.task)
         self.assertFalse((path / 'handover.json').exists())
-        self.assertEqual(json.loads((self.state.directory('QB-1') / 'handover.json').read_text())['branch'], 'engineer/qb-1')
+        self.assertEqual(json.loads((self.state.directory('QB-1') / 'handover.json').read_text())['branch'], 'dotagent/qb-1')
         other = State(self.root / 'other-state')
         duplicate = other.claim(self.ticket, str(self.repo))
         with self.assertRaisesRegex(RuntimeError, 'another runtime'):
@@ -126,8 +126,8 @@ class EngineerTests(unittest.TestCase):
         script = self.root / 'worker.py'
         script.write_text('''import sys,time,subprocess
 sys.path.insert(0,sys.argv[1])
-from engineer.state import State
-from engineer.hosts import process_record
+from dotagent.state import State
+from dotagent.hosts import process_record
 s=State(sys.argv[2])
 with s.lock('iteration'):
  p=subprocess.Popen([sys.executable,'-c','import time;time.sleep(60)'],start_new_session=True)
@@ -201,10 +201,10 @@ with s.lock('iteration'):
 
     def test_attachment_reconciliation_accepts_only_real_github_asset_urls(self):
         digest = 'a' * 64
-        urls = GitHub.attachment_urls(f'![engineer-{digest}](https://github.com/user-attachments/assets/123)')
+        urls = GitHub.attachment_urls(f'![dotagent-{digest}](https://github.com/user-attachments/assets/123)')
         self.assertEqual(urls[digest], 'https://github.com/user-attachments/assets/123')
-        self.assertFalse(GitHub.attachment_urls(f'![engineer-{digest}](/tmp/screen.png)'))
-        self.assertFalse(GitHub.attachment_urls(f'![engineer-{digest}](https://example.test/screen.png)'))
+        self.assertFalse(GitHub.attachment_urls(f'![dotagent-{digest}](/tmp/screen.png)'))
+        self.assertFalse(GitHub.attachment_urls(f'![dotagent-{digest}](https://example.test/screen.png)'))
 
     def test_delivery_reconciles_partial_upload_and_is_idempotent(self):
         remote = self.root / 'remote.git'
@@ -243,9 +243,11 @@ with s.lock('iteration'):
         delivery = FakeGitHub(self.state, self.task, {'github': 'test/repo', 'pr_base': 'main'})
         delivery.deliver()
         first_commit = self.task['commit']
+        first_body = delivery.pr['body']
         delivery.deliver()
         self.assertEqual((delivery.creates, delivery.uploads), (1, 1))
         self.assertEqual(self.task['commit'], first_commit)
+        self.assertEqual(delivery.pr['body'], first_body)
         self.assertNotIn(str(screenshot), delivery.pr['body'])
         self.assertIn('https://github.com/user-attachments/assets/fixture', delivery.pr['body'])
 
@@ -264,7 +266,7 @@ with s.lock('iteration'):
         prompts = []
         def reply(prompt, schema):
             prompts.append(prompt)
-            return {'comment_id': '42', 'body': 'personal-engineer:QB-1\nPR ready', 'error': ''}
+            return {'comment_id': '42', 'body': 'dotagent:QB-1\nPR ready', 'error': ''}
         with patch.object(integration, 'call', side_effect=reply):
             integration.progress(self.task, 'PR ready')
             integration.progress(self.task, 'PR ready')

@@ -1,4 +1,4 @@
-# Personal engineer capability research — 2026-10-07
+# Dotagent capability research — 2026-10-07
 
 ## Recommendation
 

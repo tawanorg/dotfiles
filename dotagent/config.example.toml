@@ -1,4 +1,4 @@
-state_dir = "~/.local/state/engineer"
+state_dir = "~/.local/state/dotagent"
 concurrency = 1
 min_free_gb = 10
 

@@ -95,10 +95,10 @@ def execute(host, prompt, cwd, directory, schema, config, state, task=None, brid
     with open(directory / 'events.jsonl', 'w') as log, open(directory / 'stderr.log', 'w') as err:
         process = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.PIPE,
                                    stdout=log, stderr=err, text=True, start_new_session=True)
-        state.set('worker', process_record(process, task, argv, directory))
-        process.stdin.write(prompt)
-        process.stdin.close()
         try:
+            state.set('worker', process_record(process, task, argv, directory))
+            process.stdin.write(prompt)
+            process.stdin.close()
             while process.poll() is None:
                 now = time.monotonic()
                 state.set('heartbeat', time.time())
