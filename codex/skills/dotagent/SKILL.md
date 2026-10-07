@@ -8,7 +8,8 @@ It is a persistent process; keep it running in a terminal or install its supervi
 service with `dotagent install-service --host codex`. Use `dotagent status` to report
 actual progress. Forward pause/resume/cancel requests to the corresponding command.
 
-The canonical workflow is `~/.local/share/dotagent/PLAYBOOK.md` (source:
-`dotagent/PLAYBOOK.md` in dotfiles). Read it for engineering decisions, and the
-adjacent README for installation or troubleshooting. Do not replace the runtime
-with a prompt loop or claim completion from a worker response.
+The canonical workflow is `~/.local/share/dotagent/PLAYBOOK.md`, sourced from
+`dotagent/PLAYBOOK.md` in [tawanorg/dotagent](https://github.com/tawanorg/dotagent).
+Read that repository's README for setup. Current-directory project configuration
+selects isolated state and brain memory; `--project NAME` selects explicitly.
+Do not replace the runtime with a prompt loop or claim completion from a worker response.
