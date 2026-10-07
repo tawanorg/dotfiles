@@ -1,5 +1,12 @@
 # Software engineer agent
 
+For persistent assigned Jira work, install `engineer` with
+`python3 engineer/install.py` from the dotfiles checkout, then run
+`engineer start --host codex` (or `--host claude`). See
+[the runtime guide](../../engineer/README.md). The canonical engineering workflow
+now lives in [PLAYBOOK.md](../../engineer/PLAYBOOK.md); host agent definitions are
+thin adapters to that source. The bounded interactive invocation below still works.
+
 Start a new Codex session, then ask:
 
 > Use the software_engineer agent to implement [change]. Done means [observable behavior].
