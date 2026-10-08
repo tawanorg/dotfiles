@@ -1,5 +1,11 @@
 # Software engineer agent
 
+For persistent assigned Jira work, install [dotagent](https://github.com/tawanorg/dotagent)
+from its own repository, then run `dotagent start --host codex` (or `--host claude`)
+from a configured project. Use `--project NAME` before the command to select explicitly.
+The canonical workflow is installed at `~/.local/share/dotagent/PLAYBOOK.md`;
+these host definitions are thin adapters. The bounded interactive invocation below still works.
+
 Start a new Codex session, then ask:
 
 > Use the software_engineer agent to implement [change]. Done means [observable behavior].
