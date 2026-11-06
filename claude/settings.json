@@ -21,6 +21,9 @@
     "pm-go-to-market@pm-skills": false,
     "pm-marketing-growth@pm-skills": false,
     "pm-toolkit@pm-skills": false,
-    "pm-ai-shipping@pm-skills": false
+    "pm-ai-shipping@pm-skills": false,
+    "ralph-skills@ralph-marketplace": true,
+    "android-skills@android-skills": true,
+    "material-3@material-3-skill": true
   }
 }
