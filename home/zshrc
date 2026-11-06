@@ -211,23 +211,24 @@ alias trending-open='open "$(gh-trending --url)"'
 export RALPH_HOME="$HOME/.ralph"
 
 # ── Remote Claude (claude.ai/code and the mobile app) ────────────────────────
-# Claude Code already keeps the machine awake while it is working: it spawns
-# `caffeinate -i -t 300` and renews it. That is an *idle* system-sleep
-# assertion only — it dies with the session, lets the display sleep, and does
-# not survive a closed lid. For a session you start and then walk away from,
-# these two widen it deliberately.
+# Remote Control is already on for every session: `remoteControlAtStartup` in
+# claude/settings.json starts the bridge automatically, so plain `claude` is
+# reachable from the Code tab in the Claude mobile app and from claude.ai/code.
+# Nothing below is needed to get that. `claude doctor` prints a Remote Control
+# section if the connection will not come up.
 #
-# There is no always-on Claude service to install: `claude daemon` reports
-# "Service install is disabled in this version — the daemon runs on demand and
-# exits when the last client disconnects". Remote Control therefore needs a
-# live local session, which is the whole reason the assertion matters.
+# What these two add is power, not reach. Claude Code keeps the machine awake
+# while it is working - it spawns `caffeinate -i -t 300` and renews it - but
+# that assertion is *idle system sleep* only: it dies with the session, lets
+# the display sleep, and does not survive a closed lid. There is also no
+# always-on service to fall back on; `claude daemon` reports "Service install
+# is disabled in this version - the daemon runs on demand and exits when the
+# last client disconnects". So a session you walk away from on a LAPTOP needs
+# a wider assertion underneath it. On a desktop (no lid, always on mains) the
+# default is usually enough and neither of these is worth typing.
 #
-#   claude-remote [name]   # remote-controllable session, machine held awake
+#   claude-remote [name]   # session + display/system/idle sleep held off
 #   lid-awake [on|off]     # also survive a closed lid (sudo, persistent)
-#
-# Drive the session afterwards from the Code tab in the Claude mobile app or
-# from claude.ai/code. `claude doctor` prints a Remote Control section if the
-# connection will not come up.
 
 # -d display, -i idle system sleep, -s system sleep. The assertion lasts
 # exactly as long as the session: caffeinate releases it when claude exits.

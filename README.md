@@ -399,11 +399,12 @@ by GitHub Actions, so nothing that scrolls past is lost.
 
 ### Remote Claude, and staying awake for it
 
-`/remote-control` in a session — or `claude --remote-control [name]` from the
-start — hands that session to the Code tab in the Claude mobile app and to
-claude.ai/code. It keeps running on this Mac; the other devices are only the
-remote. `claude doctor` prints a **Remote Control** section when the connection
-will not come up.
+`remoteControlAtStartup` is set in `claude/settings.json`, so **every session
+starts with Remote Control already on** — plain `claude` is reachable from the
+Code tab in the Claude mobile app and from claude.ai/code, with no flag and no
+wrapper to remember. The session keeps running on the Mac that started it; the
+other devices are only the remote. `claude doctor` prints a **Remote Control**
+section when the connection will not come up.
 
 There is no service to install. `claude daemon` is explicit about it:
 
@@ -411,29 +412,35 @@ There is no service to install. `claude daemon` is explicit about it:
 > exits when the last client disconnects.
 
 So Remote Control needs a live local session, and the machine has to stay awake
-underneath it. Claude Code already does part of that itself: while working it
-spawns `caffeinate -i -t 300` and renews it, which `pmset -g assertions` shows
+underneath it. **That part is laptop-only.** A Mac mini has no lid and sits on
+mains power, so once its Energy Saver is set not to sleep there is nothing to
+do; the commands below exist for the MacBook.
+
+Claude Code already does part of that itself: while working it spawns
+`caffeinate -i -t 300` and renews it, which `pmset -g assertions` shows
 as `PreventUserIdleSystemSleep named: "caffeinate command-line tool"`. That
 assertion is **idle system sleep only** — it dies with the session, lets the
 display sleep, and does nothing about a closed lid.
 
-| Command | Holds off | Lasts |
+| | Holds off | Lasts |
 |---|---|---|
-| Claude Code, by itself | idle system sleep | while it is working, renewed every 5 min |
+| plain `claude` | idle system sleep | while it is working, renewed every 5 min |
 | `claude-remote [name]` | display, idle **and** system sleep | exactly as long as the session |
 | `lid-awake on` | closed-lid sleep | until `lid-awake off` — persistent across reboots |
 
 ```bash
-claude-remote            # remote-controllable session, machine held awake
+claude                   # already remote-controllable; nothing to type
+claude-remote            # same, plus display and system sleep held off
 claude-remote mybox      # the name claude.ai/code shows
 lid-awake                # report current state, no sudo
 lid-awake on             # survive a closed lid (sudo, system-wide)
 lid-awake off            # put it back
 ```
 
-`claude-remote` is just `caffeinate -dis` wrapped around the session, so the
-assertion is released the moment Claude exits — there is nothing to remember to
-turn off.
+`claude-remote` adds power, not reach — `caffeinate -dis` wrapped around the
+session, so the assertion is released the moment Claude exits and there is
+nothing to remember to turn off. Reach comes from the setting, which applies
+everywhere the dotfiles are installed.
 
 `lid-awake` is separate on purpose. Closed-lid sleep is not a power assertion,
 so `caffeinate` cannot touch it; the override is `disablesleep`, which is
