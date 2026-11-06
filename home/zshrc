@@ -229,6 +229,10 @@ export RALPH_HOME="$HOME/.ralph"
 #
 #   claude-remote [name]   # session + display/system/idle sleep held off
 #   lid-awake [on|off]     # also survive a closed lid (sudo, persistent)
+#
+# Both still need a session you started. To start work FROM the phone with
+# nothing running here, install the persistent server as a login agent:
+# `claude-remote-service install <dir>` (bin/, documented in the README).
 
 # -d display, -i idle system sleep, -s system sleep. The assertion lasts
 # exactly as long as the session: caffeinate releases it when claude exits.

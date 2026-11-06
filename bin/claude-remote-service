@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# Run `claude remote-control` as a login agent, so sessions started from the
+# phone or claude.ai/code are always reachable without touching the laptop.
+#
+# Its own help explains why the agent exists: "Keep this computer awake and
+# this command running, or the session stops." So the agent wraps the server in
+# `caffeinate -dis` and launchd keeps it alive.
+set -euo pipefail
+
+LABEL="com.tawanorg.claude-remote-control"
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+LOG="$HOME/.claude/remote-control.log"
+
+die()  { printf '\033[1;31merror\033[0m %s\n' "$*" >&2; exit 1; }
+info() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+
+# launchd gets no interactive shell, so the trust prompt has nowhere to appear
+# and the server would exit on start. `claude` records a trusted directory in
+# ~/.claude.json; refuse rather than install an agent that crash-loops.
+check_trusted() {
+  local dir="$1"
+  python3 - "$dir" <<'PY'
+import json, os, sys
+dir = os.path.realpath(sys.argv[1])
+try:
+    cfg = json.load(open(os.path.expanduser("~/.claude.json")))
+except Exception:
+    sys.exit("could not read ~/.claude.json")
+p = cfg.get("projects", {})
+if dir not in {os.path.realpath(k) for k in p}:
+    sys.exit(f"{dir} is not a directory Claude has recorded.\n"
+             f"  Run `claude` there once and trust it, then install again.")
+PY
+}
+
+cmd_install() {
+  local dir="${1:-}" spawn="same-dir"
+  [[ -n $dir ]] || die "usage: claude-remote-service install <dir> [--spawn=same-dir|worktree|session]"
+  shift || true
+  for arg in "$@"; do
+    case $arg in
+      --spawn=*) spawn="${arg#*=}" ;;
+      *) die "unknown option: $arg" ;;
+    esac
+  done
+  dir="$(cd "$dir" 2>/dev/null && pwd)" || die "no such directory: ${1:-}"
+  case $spawn in same-dir|worktree|session) ;; *) die "bad --spawn: $spawn" ;; esac
+  # `claude remote-control --help`: "Worktree mode requires a git repository or
+  # WorktreeCreate/WorktreeRemove hooks".
+  if [[ $spawn == worktree ]] && ! git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
+    die "--spawn=worktree needs a git repository; $dir is not one"
+  fi
+  [[ $dir != "$HOME" ]] || die "refusing \$HOME: trust there is never saved, so a headless start cannot work"
+  check_trusted "$dir"
+
+  local claude; claude="$(command -v claude)" || die "claude not on PATH"
+  mkdir -p "$(dirname "$PLIST")" "$(dirname "$LOG")"
+  cat > "$PLIST" <<PLISTEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/caffeinate</string>
+    <string>-dis</string>
+    <string>$claude</string>
+    <string>remote-control</string>
+    <string>--spawn=$spawn</string>
+  </array>
+  <key>WorkingDirectory</key><string>$dir</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <!-- Without this a crash-loop (revoked auth, say) respawns as fast as the
+       process can exit. 30s keeps a broken install quiet enough to debug. -->
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>StandardOutPath</key><string>$LOG</string>
+  <key>StandardErrorPath</key><string>$LOG</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+</dict>
+</plist>
+PLISTEOF
+
+  launchctl bootout "gui/$UID/$LABEL" 2>/dev/null || true
+  launchctl bootstrap "gui/$UID" "$PLIST"
+  info "installed: serving $dir (--spawn=$spawn)"
+  info "log: ${LOG/#$HOME/\~}"
+}
+
+cmd_uninstall() {
+  launchctl bootout "gui/$UID/$LABEL" 2>/dev/null || true
+  rm -f "$PLIST"
+  info "removed the login agent (the log is left at ${LOG/#$HOME/\~})"
+}
+
+cmd_status() {
+  if [[ ! -f $PLIST ]]; then
+    echo "not installed"; return
+  fi
+  echo "plist:  ${PLIST/#$HOME/\~}"
+  echo "serves: $(/usr/libexec/PlistBuddy -c 'Print :WorkingDirectory' "$PLIST" 2>/dev/null)"
+  echo "spawn:  $(/usr/libexec/PlistBuddy -c 'Print :ProgramArguments:4' "$PLIST" 2>/dev/null)"
+  launchctl print "gui/$UID/$LABEL" 2>/dev/null \
+    | grep -E '^\s+(state|pid|last exit status) =' \
+    || echo "state:  not loaded"
+}
+
+case "${1:-}" in
+  install)   shift; cmd_install "$@" ;;
+  uninstall) cmd_uninstall ;;
+  status|"") cmd_status ;;
+  logs)      tail -f "$LOG" ;;
+  *) die "usage: claude-remote-service [install <dir> [--spawn=...] | uninstall | status | logs]" ;;
+esac

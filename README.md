@@ -442,6 +442,41 @@ session, so the assertion is released the moment Claude exits and there is
 nothing to remember to turn off. Reach comes from the setting, which applies
 everywhere the dotfiles are installed.
 
+#### Always on: `claude remote-control` as a login agent
+
+The commands above all need a session you started yourself. `claude
+remote-control` is the other shape: a **persistent server** that accepts up to
+32 concurrent sessions in one directory, so you can *start* work from the phone
+with nothing already running on the Mac. Its help is blunt about the catch:
+
+> Keep this computer awake and this command running, or the session stops.
+
+`bin/claude-remote-service` makes that a login agent — `caffeinate -dis` around
+the server, `KeepAlive` so launchd restarts it, `ThrottleInterval 30` so a
+crash-loop stays quiet enough to read the log.
+
+```bash
+claude-remote-service install ~/Work        # serve that folder from login on
+claude-remote-service install ~/repo --spawn=worktree
+claude-remote-service status                # where it serves, pid, last exit
+claude-remote-service logs                  # tail ~/.claude/remote-control.log
+claude-remote-service uninstall
+```
+
+It refuses three installs rather than leaving you a silently dead agent:
+
+| Refuses | Because |
+|---|---|
+| `$HOME` | trust is never saved for the home directory, so a headless start cannot succeed |
+| a directory Claude has no record of | launchd gives no terminal, so the trust prompt has nowhere to appear and the server exits. Run `claude` there once and accept it |
+| `--spawn=worktree` outside a git repo | *"Worktree mode requires a git repository or WorktreeCreate/WorktreeRemove hooks"* |
+
+The directory is machine-specific, so this is deliberately **not** part of
+`install.sh` — the plist lives in `~/Library/LaunchAgents`, outside the repo,
+and each machine chooses what it serves. On a desktop that never sleeps the
+`caffeinate` wrapper costs nothing and the agent is the whole setup.
+
+
 `lid-awake` is separate on purpose. Closed-lid sleep is not a power assertion,
 so `caffeinate` cannot touch it; the override is `disablesleep`, which is
 undocumented (absent from `pmset`'s man page and from `pmset -g custom`),
