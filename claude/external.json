@@ -17,7 +17,10 @@
     "phuryn/pm-skills",
     "Egonex-AI/Understand-Anything",
     "hashicorp/agent-skills",
-    "anthropics/skills"
+    "anthropics/skills",
+    "snarktank/ralph",
+    "android/skills",
+    "hamen/material-3-skill"
   ],
   "plugins": [
     "mattpocock-skills@mattpocock",
@@ -32,7 +35,10 @@
     "pm-data-analytics@pm-skills",
     "understand-anything@understand-anything",
     "terraform@hashicorp",
-    "document-skills@anthropic-agent-skills"
+    "document-skills@anthropic-agent-skills",
+    "ralph-skills@ralph-marketplace",
+    "android-skills@android-skills",
+    "material-3@material-3-skill"
   ],
   "shared_skills": {
     "firecrawl/skills": [
@@ -103,6 +109,29 @@
       "react-core",
       "runtime",
       "setup-slack-channel"
+    ],
+    "julianobarbosa/claude-code-skills": [
+      "defectdojo",
+      "direnv",
+      "git",
+      "git-worktree",
+      "github-pages",
+      "iterm2",
+      "managing-infra",
+      "mkdocs",
+      "neovim",
+      "shell-prompt",
+      "using-git-worktrees"
+    ],
+    "addyosmani/clarity": [
+      "clarity"
+    ],
+    "vercel/chat": [
+      "add-adapter",
+      "chat-sdk"
+    ],
+    "vercel-labs/skills": [
+      "find-skills"
     ]
   }
 }

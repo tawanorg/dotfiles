@@ -331,6 +331,18 @@ then record it in `external.json` so the next laptop gets it too.
 | **terraform@hashicorp** | HashiCorp's official plugin, 16 skills. Worth knowing the weighting: nine are about *authoring* Terraform providers in Go (`new-terraform-provider`, `provider-framework-migration`, `run-acceptance-tests`). The rest apply to consuming Terraform — `terraform-style-guide`, `terraform-test`, `refactor-module`, `terraform-stacks`, `terraform-search-import`, `terraform-policy`. |
 | **document-skills@anthropic** | Anthropic's official document suite — `xlsx`, `docx`, `pptx`, `pdf`. The complement to docling: docling *reads* a deck, these *produce* one. Its sibling `example-skills` plugin is deliberately not installed — `skill-creator`, `frontend-design` and `mcp-builder` already ship in `claude-plugins-official`. |
 | **critical-developer-mindset** | A 7-step pass over any ticket — question, research, validate, expand, secure, future, implement — on the principle that *AC is scope, not specification*. Written for tickets that arrive underspecified. |
+| **julianobarbosa/claude-code-skills** | 11 of its 123 skills, the three categories that match this machine: *Developer Tools* (`neovim`, `iterm2`, `shell-prompt`, `direnv`, `git-worktree`), *Git & Version Control* (`git`, `using-git-worktrees`) and *Infrastructure & DevOps* (`managing-infra`, `defectdojo`, `github-pages`, `mkdocs`). Pulled per-skill rather than whole — the other 112 are Azure, Power BI and Obsidian, and every installed skill's description costs context in *every* session. `git-worktree` and `using-git-worktrees` overlap: the first is iTerm2 tabs, the second tmux windows plus task dispatch. [julianobarbosa/claude-code-skills](https://github.com/julianobarbosa/claude-code-skills). |
+
+**`shared_skills` is the third mechanism, and the only one both agents see.**
+A skill listed there is fetched once into `~/.agents/skills/<name>` by
+`bin/claude-shared-skills --external`, then symlinked into `claude/skills/` for
+Claude and `~/.codex/skills/` for Codex — one copy on disk, two agents, no
+divergence. Codex's half is driven by an `npx skills add … --agent codex` line
+in `codex/external.json`, which `codex-sync install --external` replays.
+Adding a source takes three edits: the `shared_skills` entry, the matching
+`.gitignore` lines, and the Codex install command. A bare
+`bin/claude-shared-skills` (no `--external`) only restores the symlinks, which
+is why `install.sh` ends with it.
 
 ### Toolchain — 45 formulae, 7 casks
 
