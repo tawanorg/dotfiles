@@ -192,5 +192,23 @@ fi
 
 alias trending='gh-trending --list | less -R'
 alias trending-open='open "$(gh-trending --url)"'
+# ── Ralph (autonomous Claude Code loops) ─────────────────────────────────────
+# Installed to ~/.ralph with wrappers in ~/.local/bin (already on PATH above),
+# so nothing here is needed to RUN it. This block exists to say where it lives
+# and to record one deliberate omission.
+#
+# Ralph reads CLAUDE_MODEL, CLAUDE_EFFORT, CLAUDE_TIMEOUT_MINUTES,
+# CLAUDE_OUTPUT_FORMAT and CLAUDE_CODE_CMD from the environment. They are NOT
+# exported here on purpose: those names are generic enough to be picked up by
+# interactive Claude Code too, so a global default here would quietly change
+# every session, not just Ralph's loops. Per-project settings belong in that
+# project's `.ralphrc`, which is where Ralph looks for them.
+#
+#   ralph-enable        # opt this project in (writes .ralph/ + .ralphrc)
+#   ralph --monitor     # run the loop with the dashboard
+#   ralph --dry-run     # simulate the loop without spending API calls
+#   ralph-stats         # what the last runs cost
+export RALPH_HOME="$HOME/.ralph"
+
 # ── Local overrides (machine-specific, not committed anywhere) ────────────
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

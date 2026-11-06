@@ -73,3 +73,28 @@ claude/skills/intelligence-docs
 claude/skills/react-core
 claude/skills/runtime
 claude/skills/setup-slack-channel
+
+# julianobarbosa/claude-code-skills - Developer Tools, Git & Version Control,
+# Infrastructure & DevOps (shared with Codex via ~/.agents/skills)
+claude/skills/defectdojo
+claude/skills/direnv
+claude/skills/git
+claude/skills/git-worktree
+claude/skills/github-pages
+claude/skills/iterm2
+claude/skills/managing-infra
+claude/skills/mkdocs
+claude/skills/neovim
+claude/skills/shell-prompt
+claude/skills/using-git-worktrees
+
+# Claude Code's own cloud skill cache. It lands here because ~/.claude/skills
+# is a symlink into this repo; it is machine state, not configuration.
+claude/skills/synced/
+
+# addyosmani/clarity, vercel/chat, vercel-labs/skills
+# (shared with Codex via ~/.agents/skills)
+claude/skills/clarity
+claude/skills/add-adapter
+claude/skills/chat-sdk
+claude/skills/find-skills

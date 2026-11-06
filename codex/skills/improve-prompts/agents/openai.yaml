@@ -1,0 +1,4 @@
+interface:
+  display_name: "/improve-prompts"
+  short_description: "Rewrite prompts for clearer, stronger results"
+  default_prompt: "Use $improve-prompts to improve the prompt below without executing it."

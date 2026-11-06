@@ -74,6 +74,33 @@ Do not delegate interactive work, where you need the state visible between
 turns. `terraform-plan-reviewer`, `doc-researcher` and `page-smoke-checker`
 are local; write more in `claude/agents/` when the same shape recurs.
 
+## Running unattended
+
+Three ways to keep working without a person in the loop, and they are not
+interchangeable:
+
+- **`/loop`** (built in) — you keep the session and its context. Right when the
+  task is *watch something and react*: a CI run, a flaky test, a queue.
+- **Workflow / subagents** — one orchestrated fan-out, then done. Right when the
+  work decomposes into independent pieces and you want the conclusion, not the
+  intermediate output.
+- **`ralph`** (external, `~/.ralph`) — a fresh Claude Code process per
+  iteration, looping until it declares completion. Right only when the task is
+  genuinely *build until finished* and each iteration can re-derive its own
+  context from the repo and `.ralph/PROMPT.md`.
+
+Ralph's cost is the thing to be honest about: every iteration is a new process
+with no memory of the last one, so anything not written down is re-derived or
+lost. That is a feature for greenfield building and a liability for a change that
+needs judgement held across steps. It rate-limits (default 100 calls/hour) and
+exits on a dual condition — completion indicators AND an explicit EXIT_SIGNAL —
+because the failure mode being guarded is a loop that believes it is done.
+
+Before the first real run: `ralph --dry-run` to see the loop without spending
+calls, `ralph-stats` after, and `ralph-enable` to opt a project in rather than
+running it in a directory that has no `.ralph/PROMPT.md`. Never point it at a
+repo with uncommitted work you care about.
+
 ## Reviewing
 
 `/code-review` (built in) and `mattpocock-skills:code-review` both exist and do
