@@ -455,6 +455,13 @@ with nothing already running on the Mac. Its help is blunt about the catch:
 the server, `KeepAlive` so launchd restarts it, `ThrottleInterval 30` so a
 crash-loop stays quiet enough to read the log.
 
+Output goes through `bin/claude-remote-log-filter` rather than straight to a
+`StandardOutPath`. The server redraws its whole TUI to the non-tty several
+times a second and launchd appends every frame, so the raw log grew **36MB a
+day** of identical text with nothing to rotate it. The filter strips ANSI and
+keeps each distinct line once, timestamped: 97KB of frames became 821 bytes,
+and the log now sits still between real events.
+
 ```bash
 claude-remote-service install ~/Work        # serve that folder from login on
 claude-remote-service install ~/repo --spawn=worktree
@@ -470,6 +477,13 @@ It refuses three installs rather than leaving you a silently dead agent:
 | `$HOME` | trust is never saved for the home directory, so a headless start cannot succeed |
 | a directory Claude has no record of | launchd gives no terminal, so the trust prompt has nowhere to appear and the server exits. Run `claude` there once and accept it |
 | `--spawn=worktree` outside a git repo | *"Worktree mode requires a git repository or WorktreeCreate/WorktreeRemove hooks"* |
+
+Two launchd quirks the script works around, both of which cost an afternoon
+once: `launchctl bootout` is not instant, so bootstrapping the replacement
+immediately fails with `5: Input/output error` — it waits for the label to
+leave the domain first. And `launchctl load` prints `Load failed` while still
+exiting `0`, so neither loader can be trusted by exit status; the script
+verifies with `launchctl print` and fails loudly if the job did not appear.
 
 The directory is machine-specific, so this is deliberately **not** part of
 `install.sh` — the plist lives in `~/Library/LaunchAgents`, outside the repo,

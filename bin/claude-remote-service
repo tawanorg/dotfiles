@@ -26,10 +26,18 @@ try:
     cfg = json.load(open(os.path.expanduser("~/.claude.json")))
 except Exception:
     sys.exit("could not read ~/.claude.json")
-p = cfg.get("projects", {})
-if dir not in {os.path.realpath(k) for k in p}:
+# Presence in "projects" is not trust: $HOME is listed with
+# hasTrustDialogAccepted false, which is exactly the case that cannot work
+# headlessly. Check the flag itself.
+entry = next((v for k, v in cfg.get("projects", {}).items()
+              if os.path.realpath(k) == dir), None)
+if entry is None:
     sys.exit(f"{dir} is not a directory Claude has recorded.\n"
              f"  Run `claude` there once and trust it, then install again.")
+if not entry.get("hasTrustDialogAccepted"):
+    sys.exit(f"{dir} is recorded but not trusted "
+             f"(hasTrustDialogAccepted is false).\n"
+             f"  Run `claude` there once and accept the prompt, then install again.")
 PY
 }
 
@@ -54,6 +62,8 @@ cmd_install() {
   check_trusted "$dir"
 
   local claude; claude="$(command -v claude)" || die "claude not on PATH"
+  local filter="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/claude-remote-log-filter"
+  [[ -x $filter ]] || die "missing log filter: $filter"
   mkdir -p "$(dirname "$PLIST")" "$(dirname "$LOG")"
   cat > "$PLIST" <<PLISTEOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -61,13 +71,15 @@ cmd_install() {
 <plist version="1.0">
 <dict>
   <key>Label</key><string>$LABEL</string>
+  <!-- The server redraws its whole TUI to this non-tty several times a second
+       and launchd appends every frame, so a raw StandardOutPath grows ~36MB a
+       day of identical text with no rotation. The filter keeps each distinct
+       line once, timestamped: ~97KB of frames became 821 bytes in testing. -->
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/bin/caffeinate</string>
-    <string>-dis</string>
-    <string>$claude</string>
-    <string>remote-control</string>
-    <string>--spawn=$spawn</string>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>/usr/bin/caffeinate -dis $claude remote-control --spawn=$spawn 2&gt;&amp;1 | $filter &gt;&gt; $LOG</string>
   </array>
   <key>WorkingDirectory</key><string>$dir</string>
   <key>RunAtLoad</key><true/>
@@ -75,8 +87,6 @@ cmd_install() {
   <!-- Without this a crash-loop (revoked auth, say) respawns as fast as the
        process can exit. 30s keeps a broken install quiet enough to debug. -->
   <key>ThrottleInterval</key><integer>30</integer>
-  <key>StandardOutPath</key><string>$LOG</string>
-  <key>StandardErrorPath</key><string>$LOG</string>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
@@ -85,8 +95,27 @@ cmd_install() {
 </plist>
 PLISTEOF
 
+  # Unloading is not instant. Bootstrapping while the old job is still being
+  # torn down fails with "5: Input/output error", so wait for the label to
+  # actually leave the domain before loading the new one.
   launchctl bootout "gui/$UID/$LABEL" 2>/dev/null || true
-  launchctl bootstrap "gui/$UID" "$PLIST"
+  local i
+  for i in $(seq 1 20); do
+    launchctl print "gui/$UID/$LABEL" >/dev/null 2>&1 || break
+    sleep 0.25
+  done
+
+  # `launchctl load` prints "Load failed" and still exits 0, so neither loader
+  # can be trusted by exit status. Try both, then verify the job is really there.
+  launchctl bootstrap "gui/$UID" "$PLIST" 2>/dev/null \
+    || launchctl load -w "$PLIST" >/dev/null 2>&1 || true
+  for i in $(seq 1 20); do
+    launchctl print "gui/$UID/$LABEL" >/dev/null 2>&1 && break
+    sleep 0.25
+  done
+  launchctl print "gui/$UID/$LABEL" >/dev/null 2>&1 \
+    || die "the agent did not load. Check: launchctl print gui/$UID/$LABEL"
+
   info "installed: serving $dir (--spawn=$spawn)"
   info "log: ${LOG/#$HOME/\~}"
 }
@@ -103,7 +132,7 @@ cmd_status() {
   fi
   echo "plist:  ${PLIST/#$HOME/\~}"
   echo "serves: $(/usr/libexec/PlistBuddy -c 'Print :WorkingDirectory' "$PLIST" 2>/dev/null)"
-  echo "spawn:  $(/usr/libexec/PlistBuddy -c 'Print :ProgramArguments:4' "$PLIST" 2>/dev/null)"
+  echo "spawn:  $(/usr/libexec/PlistBuddy -c 'Print :ProgramArguments:2' "$PLIST" 2>/dev/null | grep -oE '\-\-spawn=[a-z-]+')"
   launchctl print "gui/$UID/$LABEL" 2>/dev/null \
     | grep -E '^\s+(state|pid|last exit status) =' \
     || echo "state:  not loaded"

@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+# Strip ANSI/OSC, trim, drop blanks, and print each distinct line once with the
+# time it first appeared. The remote-control server redraws its whole TUI to a
+# non-tty several times a second; launchd appends every frame, so without this
+# the log grows ~36MB/day of identical text.
+$| = 1;
+my %seen;
+while (<STDIN>) {
+    s/\e\][^\a\e]*(?:\a|\e\\)//g;   # OSC (hyperlinks)
+    s/\e\[[0-9;?]*[A-Za-z]//g;      # CSI (colour, cursor moves)
+    s/\r//g;
+    for my $line (split /\n/) {
+        $line =~ s/^\s+|\s+$//g;
+        next unless length $line;
+        next if $seen{$line}++;
+        my @t = localtime;
+        printf "%04d-%02d-%02d %02d:%02d:%02d  %s\n",
+            $t[5]+1900, $t[4]+1, $t[3], $t[2], $t[1], $t[0], $line;
+    }
+}
