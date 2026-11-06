@@ -397,6 +397,56 @@ Snapshots are archived daily to
 **[tawanorg/trending-open-sources](https://github.com/tawanorg/trending-open-sources)**
 by GitHub Actions, so nothing that scrolls past is lost.
 
+### Remote Claude, and staying awake for it
+
+`/remote-control` in a session — or `claude --remote-control [name]` from the
+start — hands that session to the Code tab in the Claude mobile app and to
+claude.ai/code. It keeps running on this Mac; the other devices are only the
+remote. `claude doctor` prints a **Remote Control** section when the connection
+will not come up.
+
+There is no service to install. `claude daemon` is explicit about it:
+
+> Service install is disabled in this version — the daemon runs on demand and
+> exits when the last client disconnects.
+
+So Remote Control needs a live local session, and the machine has to stay awake
+underneath it. Claude Code already does part of that itself: while working it
+spawns `caffeinate -i -t 300` and renews it, which `pmset -g assertions` shows
+as `PreventUserIdleSystemSleep named: "caffeinate command-line tool"`. That
+assertion is **idle system sleep only** — it dies with the session, lets the
+display sleep, and does nothing about a closed lid.
+
+| Command | Holds off | Lasts |
+|---|---|---|
+| Claude Code, by itself | idle system sleep | while it is working, renewed every 5 min |
+| `claude-remote [name]` | display, idle **and** system sleep | exactly as long as the session |
+| `lid-awake on` | closed-lid sleep | until `lid-awake off` — persistent across reboots |
+
+```bash
+claude-remote            # remote-controllable session, machine held awake
+claude-remote mybox      # the name claude.ai/code shows
+lid-awake                # report current state, no sudo
+lid-awake on             # survive a closed lid (sudo, system-wide)
+lid-awake off            # put it back
+```
+
+`claude-remote` is just `caffeinate -dis` wrapped around the session, so the
+assertion is released the moment Claude exits — there is nothing to remember to
+turn off.
+
+`lid-awake` is separate on purpose. Closed-lid sleep is not a power assertion,
+so `caffeinate` cannot touch it; the override is `disablesleep`, which is
+undocumented (absent from `pmset`'s man page and from `pmset -g custom`),
+applies to every power source, and survives reboots. `install.sh` never sets
+it. The function reads the value back afterwards instead of trusting the exit
+code, because an unsupported key is accepted silently on some releases — if it
+does not stick, keep the lid open or run clamshell with an external display and
+power attached.
+
+The matching Codex setting is `keepRemoteControlAwakeWhilePluggedIn` in
+`codex/config.toml`. Codex Desktop owns that one; it has no effect on Claude.
+
 ---
 
 ## Install

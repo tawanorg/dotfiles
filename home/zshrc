@@ -210,5 +210,55 @@ alias trending-open='open "$(gh-trending --url)"'
 #   ralph-stats         # what the last runs cost
 export RALPH_HOME="$HOME/.ralph"
 
+# ── Remote Claude (claude.ai/code and the mobile app) ────────────────────────
+# Claude Code already keeps the machine awake while it is working: it spawns
+# `caffeinate -i -t 300` and renews it. That is an *idle* system-sleep
+# assertion only — it dies with the session, lets the display sleep, and does
+# not survive a closed lid. For a session you start and then walk away from,
+# these two widen it deliberately.
+#
+# There is no always-on Claude service to install: `claude daemon` reports
+# "Service install is disabled in this version — the daemon runs on demand and
+# exits when the last client disconnects". Remote Control therefore needs a
+# live local session, which is the whole reason the assertion matters.
+#
+#   claude-remote [name]   # remote-controllable session, machine held awake
+#   lid-awake [on|off]     # also survive a closed lid (sudo, persistent)
+#
+# Drive the session afterwards from the Code tab in the Claude mobile app or
+# from claude.ai/code. `claude doctor` prints a Remote Control section if the
+# connection will not come up.
+
+# -d display, -i idle system sleep, -s system sleep. The assertion lasts
+# exactly as long as the session: caffeinate releases it when claude exits.
+claude-remote() {
+  caffeinate -dis claude --remote-control "$@"
+}
+
+# Closed-lid sleep is not a power assertion, so caffeinate cannot hold it off.
+# The override is `disablesleep`, which is undocumented (absent from pmset's
+# man page and from `pmset -g custom`), persistent, and applies system-wide to
+# every power source — so this is a command you run deliberately, never
+# something install.sh does. It is verified after the fact rather than assumed,
+# because an unsupported key is accepted silently on some releases.
+lid-awake() {
+  case "$1" in
+    on|off)
+      local want=$([[ $1 == on ]] && echo 1 || echo 0)
+      sudo pmset -a disablesleep "$want" || return
+      if pmset -g | grep -qE "disablesleep[[:space:]]+$want"; then
+        print -r -- "lid-awake $1: closed-lid sleep $([[ $want == 1 ]] && echo disabled || echo restored)"
+      else
+        print -r -- "lid-awake $1: pmset accepted it but 'disablesleep' is not reported back"
+        print -r -- "  This macOS does not support the key. Keep the lid open, or use"
+        print -r -- "  clamshell mode with an external display and power attached."
+      fi
+      ;;
+    *)
+      pmset -g | grep -iE 'disablesleep' || print -r -- "disablesleep: not set (closed lid will sleep)"
+      ;;
+  esac
+}
+
 # ── Local overrides (machine-specific, not committed anywhere) ────────────
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
